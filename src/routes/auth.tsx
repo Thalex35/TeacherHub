@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { lovable } from "@/integrations/lovable";
+// Keep the original Lovable OAuth flow in comments for later re-enablement.
+// import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
@@ -43,28 +43,30 @@ function AuthPage() {
     void navigate({ to: "/dashboard" });
   };
 
-  const signUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    setLoading(false);
-    if (error) { toast.error(error.message); return; }
-    if (data.session) return void navigate({ to: "/dashboard" });
-    toast.success("Account created. Check your inbox to confirm your email.");
-  };
+  // Single-user mode: keep original sign-up flow commented out for later re-enablement.
+  // const signUp = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   const { data, error } = await supabase.auth.signUp({
+  //     email,
+  //     password,
+  //     options: { emailRedirectTo: window.location.origin },
+  //   });
+  //   setLoading(false);
+  //   if (error) { toast.error(error.message); return; }
+  //   if (data.session) return void navigate({ to: "/dashboard" });
+  //   toast.success("Account created. Check your inbox to confirm your email.");
+  // };
 
-  const google = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) { toast.error("Google sign-in failed. Please try again."); return; }
-    if (result.redirected) return;
-    void navigate({ to: "/dashboard" });
-  };
+  // Single-user mode: keep original Google flow commented out for later re-enablement.
+  // const google = async () => {
+  //   const result = await lovable.auth.signInWithOAuth("google", {
+  //     redirect_uri: window.location.origin,
+  //   });
+  //   if (result.error) { toast.error("Google sign-in failed. Please try again."); return; }
+  //   if (result.redirected) return;
+  //   void navigate({ to: "/dashboard" });
+  // };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-4 py-10">
@@ -80,57 +82,27 @@ function AuthPage() {
         </div>
 
         <div className="surface p-6">
-          <Tabs defaultValue="signin">
-            <TabsList className="mb-4 grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign in</TabsTrigger>
-              <TabsTrigger value="signup">Create account</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin">
-              <form onSubmit={signIn} className="space-y-4">
-                <Field id="email" label="Email" value={email} onChange={setEmail} type="email" />
-                <Field
-                  id="password"
-                  label="Password"
-                  value={password}
-                  onChange={setPassword}
-                  type="password"
-                />
-                <Button type="submit" className="w-full" disabled={loading}>
-                  Sign in
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={signUp} className="space-y-4">
-                <Field
-                  id="email2"
-                  label="Email"
-                  value={email}
-                  onChange={setEmail}
-                  type="email"
-                />
-                <Field
-                  id="password2"
-                  label="Password"
-                  value={password}
-                  onChange={setPassword}
-                  type="password"
-                />
-                <Button type="submit" className="w-full" disabled={loading}>
-                  Create account
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+          <div className="mb-4 text-center text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            Single-user sign in
           </div>
-          <Button variant="outline" className="w-full" onClick={google}>
-            Continue with Google
-          </Button>
+
+          <form onSubmit={signIn} className="space-y-4">
+            <Field id="email" label="Email" value={email} onChange={setEmail} type="email" />
+            <Field
+              id="password"
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              type="password"
+            />
+            <Button type="submit" className="w-full" disabled={loading}>
+              Sign in
+            </Button>
+          </form>
+
+          {/* Alternative sign-in methods are intentionally disabled for this single-user setup.
+              Keep the original code commented here for later re-enablement.
+          */}
         </div>
       </div>
     </div>
