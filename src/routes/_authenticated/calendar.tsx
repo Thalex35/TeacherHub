@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ import { formatDate, titleCase } from "@/lib/format";
 import { EVENT_TYPES, type CalendarEvent } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
+  validateSearch: z.object({ date: z.string().optional() }),
   head: () => ({
     meta: [
       { title: "Calendar — TeacherHub" },
@@ -45,6 +47,7 @@ const NONE = "__none__";
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 function CalendarPage() {
+  const { date } = Route.useSearch();
   const events = useEvents();
   const classes = useClasses();
   const subjects = useSubjects();
@@ -53,7 +56,7 @@ function CalendarPage() {
   const remove = useRemove("calendar_events");
 
   const [view, setView] = useState<"month" | "week" | "day">("month");
-  const [cursor, setCursor] = useState(new Date());
+  const [cursor, setCursor] = useState(() => (date ? new Date(`${date}T00:00:00`) : new Date()));
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [form, setForm] = useState({
@@ -67,6 +70,10 @@ function CalendarPage() {
   });
 
   const all = events.data ?? [];
+
+  useEffect(() => {
+    if (date) setCursor(new Date(`${date}T00:00:00`));
+  }, [date]);
 
   const range = () => {
     const d = new Date(cursor);
