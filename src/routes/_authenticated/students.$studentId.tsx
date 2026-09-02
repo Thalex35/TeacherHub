@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { attendanceStats } from "@/lib/calc";
 import { useAttendance } from "@/lib/data";
@@ -37,6 +38,10 @@ function StudentProfile() {
   const att = attendanceStats((attendance.data ?? []).filter((r) => r.student_id === studentId));
   const final = currentPeriod ? a.finalGrade(studentId, currentPeriod.id) : null;
 
+  if (a.loading || attendance.isLoading) {
+    return <p className="py-12 text-center text-sm text-muted-foreground">Loading student profile...</p>;
+  }
+
   if (!student) {
     return (
       <div>
@@ -64,6 +69,13 @@ function StudentProfile() {
           </Badge>
         }
       />
+
+      <div className="surface mb-6 grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Info label="Full name" value={`${student.first_name} ${student.last_name}`} />
+        <Info label="Student ID" value={student.student_code} />
+        <Info label="Class" value={a.classes.find((c) => c.id === student.class_id)?.name ?? "—"} />
+        <Info label="Status" value={titleCase(student.status)} />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
@@ -178,6 +190,15 @@ function Metric({ label, value, hint }: { label: string; value: string; hint?: s
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="numeric text-2xl font-semibold">{value}</p>
       {hint ? <p className="text-xs text-warning-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-medium">{value}</p>
     </div>
   );
 }
