@@ -50,6 +50,16 @@ const emptyForm = {
   status: "active",
 };
 
+function nextStudentCode(className: string, students: Student[]) {
+  const escapedClassName = className.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^STU-${escapedClassName}-(\\d+)$`, "i");
+  const highestNumber = students.reduce((highest, student) => {
+    const match = pattern.exec(student.student_code);
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+  return `STU-${className}-${String(highestNumber + 1).padStart(2, "0")}`;
+}
+
 function StudentsPage() {
   const a = useAcademics();
   const insert = useInsert("students");
@@ -77,7 +87,13 @@ function StudentsPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ ...emptyForm, class_id: a.classes[0]?.id ?? "" });
+    const classId = a.classes[0]?.id ?? "";
+    const className = a.classes.find((klass) => klass.id === classId)?.name ?? "";
+    setForm({
+      ...emptyForm,
+      class_id: classId,
+      student_code: className ? nextStudentCode(className, a.students) : "",
+    });
     setOpen(true);
   };
 
@@ -97,11 +113,15 @@ function StudentsPage() {
     if (!form.first_name.trim() || !form.last_name.trim())
       { toast.error("First and last name are required."); return; }
     if (!form.class_id) { toast.error("A student must belong to a class."); return; }
-    if (!form.student_code.trim()) { toast.error("Student ID is required."); return; }
+    const selectedClass = a.classes.find((klass) => klass.id === form.class_id);
+    if (!selectedClass) { toast.error("Select a valid class."); return; }
+    const studentCode = editing
+      ? form.student_code
+      : nextStudentCode(selectedClass.name, a.students);
     const values = {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
-      student_code: form.student_code.trim(),
+      student_code: editing ? studentCode : undefined,
       class_id: form.class_id,
       status: form.status,
     };
@@ -255,15 +275,26 @@ function StudentsPage() {
               <Label>Student ID</Label>
               <Input
                 value={form.student_code}
-                onChange={(e) => setForm({ ...form, student_code: e.target.value })}
-                placeholder="STU-7e-01"
+                readOnly={!editing}
+                disabled={!editing}
+                placeholder="Generated from class"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Class</Label>
               <Select
                 value={form.class_id}
-                onValueChange={(v) => setForm({ ...form, class_id: v })}
+                onValueChange={(v) => {
+                  const selectedClass = a.classes.find((klass) => klass.id === v);
+                  setForm({
+                    ...form,
+                    class_id: v,
+                    student_code:
+                      selectedClass
+                        ? nextStudentCode(selectedClass.name, a.students)
+                        : form.student_code,
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select class" />
