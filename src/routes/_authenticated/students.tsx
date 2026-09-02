@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -61,6 +61,7 @@ function nextStudentCode(className: string, students: Student[]) {
 }
 
 function StudentsPage() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const a = useAcademics();
   const insert = useInsert("students");
   const update = useUpdate("students");
@@ -72,6 +73,8 @@ function StudentsPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  if (pathname !== "/students") return <Outlet />;
 
   const filtered = a.students.filter((s) => {
     const q = search.trim().toLowerCase();
