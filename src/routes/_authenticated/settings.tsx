@@ -381,7 +381,7 @@ function SettingsPage() {
                 ))}
               </TableBody>
             </Table>
-            <div className="grid gap-2 sm:grid-cols-4">
+            <div className="grid min-w-0 gap-2 sm:grid-cols-2">
               <Input
                 placeholder="2026–2027"
                 value={yearForm.name}
@@ -397,7 +397,7 @@ function SettingsPage() {
                 value={yearForm.end_date}
                 onChange={(e) => setYearForm({ ...yearForm, end_date: e.target.value })}
               />
-              <Button variant="outline" onClick={addYear}>
+              <Button className="sm:col-span-2" variant="outline" onClick={addYear}>
                 <Plus className="size-4" /> Add year
               </Button>
             </div>
