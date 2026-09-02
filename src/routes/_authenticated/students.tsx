@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -62,6 +62,7 @@ function nextStudentCode(className: string, students: Student[]) {
 
 function StudentsPage() {
   const a = useAcademics();
+  const navigate = useNavigate();
   const insert = useInsert("students");
   const update = useUpdate("students");
   const remove = useRemove("students");
@@ -211,7 +212,11 @@ function StudentsPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((s) => (
-                <TableRow key={s.id}>
+                <TableRow
+                  key={s.id}
+                  className="cursor-pointer"
+                  onClick={() => void navigate({ to: "/students/$studentId", params: { studentId: s.id } })}
+                >
                   <TableCell className="font-medium">
                     <Link
                       to="/students/$studentId"
@@ -232,15 +237,36 @@ function StudentsPage() {
                     {a.studentAverage(s.id) === null ? "—" : `${a.studentAverage(s.id)}/${a.scale}`}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openEdit(s);
+                      }}
+                    >
                       <Pencil className="size-4" />
                     </Button>
                     {s.status === "active" ? (
-                      <Button variant="ghost" size="sm" onClick={() => deactivate(s)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void deactivate(s);
+                        }}
+                      >
                         Deactivate
                       </Button>
                     ) : null}
-                    <Button variant="ghost" size="icon" onClick={() => del(s)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void del(s);
+                      }}
+                    >
                       <Trash2 className="size-4" />
                     </Button>
                   </TableCell>
