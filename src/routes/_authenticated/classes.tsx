@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { GraduationCap, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/_authenticated/classes")({
 });
 
 function ClassesPage() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const a = useAcademics();
   const subjects = useSubjects();
   const years = useYears();
@@ -58,6 +59,8 @@ function ClassesPage() {
     academic_year_id: "",
     is_active: true,
   });
+
+  if (pathname !== "/classes") return <Outlet />;
 
   const openNew = () => {
     setEditing(null);
