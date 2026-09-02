@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -210,6 +218,14 @@ function CalendarPage() {
         </Tabs>
       </div>
 
+      {view === "day" ? (
+        <div className="mb-3">
+          <Button variant="outline" size="sm" onClick={() => setView("month")}>
+            <ArrowLeft className="size-4" /> Back to calendar
+          </Button>
+        </div>
+      ) : null}
+
       {view === "month" ? (
         <div className="surface overflow-hidden">
           <div className="grid grid-cols-7 border-b border-border bg-muted text-xs font-medium text-muted-foreground">
@@ -223,7 +239,20 @@ function CalendarPage() {
             {monthCells().map((day, i) => (
               <div
                 key={i}
-                className="min-h-24 border-b border-r border-border p-1.5 last:border-r-0"
+                className="min-h-24 cursor-pointer border-b border-r border-border p-1.5 transition-colors hover:bg-muted/50 last:border-r-0"
+                role={day ? "button" : undefined}
+                tabIndex={day ? 0 : undefined}
+                onClick={() => {
+                  if (!day) return;
+                  setCursor(new Date(`${day}T00:00:00`));
+                  setView("day");
+                }}
+                onKeyDown={(event) => {
+                  if (!day || (event.key !== "Enter" && event.key !== " ")) return;
+                  event.preventDefault();
+                  setCursor(new Date(`${day}T00:00:00`));
+                  setView("day");
+                }}
                 onDoubleClick={() => day && openNew(day)}
               >
                 {day ? (

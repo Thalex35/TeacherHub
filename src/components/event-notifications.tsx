@@ -8,8 +8,7 @@ import { useEvents } from "@/lib/data";
 import { formatDate, titleCase } from "@/lib/format";
 import type { CalendarEvent } from "@/lib/types";
 
-const dateOnly = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+const dateOnly = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 function daysUntil(eventDate: string, today: Date) {
   const event = new Date(`${eventDate}T00:00:00`);
@@ -76,7 +75,9 @@ export function EventNotifications() {
                   key={event.id}
                   type="button"
                   className="block w-full rounded-md border border-border p-3 text-left transition-colors hover:bg-accent"
-                  onClick={() => void navigate({ to: "/calendar", search: { date: event.event_date } })}
+                  onClick={() =>
+                    void navigate({ to: "/calendar", search: { date: event.event_date } })
+                  }
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 truncate text-sm font-medium">{event.title}</p>
@@ -88,7 +89,9 @@ export function EventNotifications() {
                     {formatDate(event.event_date)}
                     {event.start_time ? ` · ${event.start_time.slice(0, 5)}` : ""}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">{titleCase(event.event_type)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {titleCase(event.event_type)}
+                  </p>
                 </button>
               );
             })}
