@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -62,7 +62,6 @@ function nextStudentCode(className: string, students: Student[]) {
 
 function StudentsPage() {
   const a = useAcademics();
-  const navigate = useNavigate();
   const insert = useInsert("students");
   const update = useUpdate("students");
   const remove = useRemove("students");
@@ -215,13 +214,13 @@ function StudentsPage() {
                 <TableRow
                   key={s.id}
                   className="cursor-pointer"
-                  onClick={() => void navigate({ to: "/students/$studentId", params: { studentId: s.id } })}
                 >
                   <TableCell className="font-medium">
                     <Link
                       to="/students/$studentId"
                       params={{ studentId: s.id }}
-                      className="hover:underline"
+                      className="inline-block hover:underline"
+                      onClick={(event) => event.stopPropagation()}
                     >
                       {s.first_name} {s.last_name}
                     </Link>

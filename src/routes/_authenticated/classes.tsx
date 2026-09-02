@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { GraduationCap, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -43,7 +43,6 @@ export const Route = createFileRoute("/_authenticated/classes")({
 
 function ClassesPage() {
   const a = useAcademics();
-  const navigate = useNavigate();
   const subjects = useSubjects();
   const years = useYears();
   const insert = useInsert("classes");
@@ -149,13 +148,13 @@ function ClassesPage() {
                 <TableRow
                   key={c.id}
                   className="cursor-pointer"
-                  onClick={() => void navigate({ to: "/classes/$classId", params: { classId: c.id } })}
                 >
                   <TableCell className="font-medium">
                     <Link
                       to="/classes/$classId"
                       params={{ classId: c.id }}
-                      className="hover:underline"
+                      className="inline-block hover:underline"
+                      onClick={(event) => event.stopPropagation()}
                     >
                       {c.name}
                       {c.section ? ` · ${c.section}` : ""}

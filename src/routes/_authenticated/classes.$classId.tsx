@@ -1,12 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAttendance, useLessons, useTopics, useUnits } from "@/lib/data";
+import {
+  useAttendance,
+  useLessons,
+  useRemove,
+  useSubjects,
+  useTopics,
+  useUnits,
+  useUpdate,
+  useYears,
+} from "@/lib/data";
 import { Input } from "@/components/ui/input";
 import { attendanceStats } from "@/lib/calc";
 import { formatDate, titleCase } from "@/lib/format";
@@ -35,6 +44,10 @@ function ClassDetail() {
   const topics = useTopics();
   const lessons = useLessons();
   const attendance = useAttendance();
+  const subjects = useSubjects();
+  const years = useYears();
+  const updateStudent = useUpdate("students");
+  const removeStudent = useRemove("students");
 
   const klass = a.classes.find((c) => c.id === classId);
   const students = a.students.filter((s) => s.class_id === classId);
@@ -56,7 +69,25 @@ function ClassDetail() {
     return matchesSearch && (studentStatus === "all" || student.status === studentStatus);
   });
 
-  if (a.loading || units.isLoading || topics.isLoading || lessons.isLoading || attendance.isLoading) {
+  const deactivateStudent = async (student: (typeof students)[number]) => {
+    await updateStudent.mutateAsync({ id: student.id, values: { status: "inactive" } });
+  };
+
+  const deleteStudent = async (student: (typeof students)[number]) => {
+    if (a.grades.some((grade) => grade.student_id === student.id)) return;
+    if (!window.confirm(`Permanently delete ${student.first_name} ${student.last_name}?`)) return;
+    await removeStudent.mutateAsync(student.id);
+  };
+
+  if (
+    a.loading ||
+    units.isLoading ||
+    topics.isLoading ||
+    lessons.isLoading ||
+    attendance.isLoading ||
+    subjects.isLoading ||
+    years.isLoading
+  ) {
     return <p className="py-12 text-center text-sm text-muted-foreground">Loading class dashboard...</p>;
   }
 
@@ -80,9 +111,7 @@ function ClassDetail() {
       </Button>
       <PageHeader
         title={`${klass.name}${klass.section ? ` · ${klass.section}` : ""}`}
-        description={`${students.filter((s) => s.status === "active").length} active students · class average ${
-          a.classAverage(classId) === null ? "—" : `${a.classAverage(classId)}/${a.scale}`
-        }`}
+        description={`${subjects.data?.find((subject) => subject.id === klass.subject_id)?.name ?? "—"} · ${years.data?.find((year) => year.id === klass.academic_year_id)?.name ?? "—"}`}
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -150,6 +179,25 @@ function ClassDetail() {
                       {a.studentAverage(s.id) === null
                         ? "—"
                         : `${a.studentAverage(s.id)}/${a.scale}`}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {s.status === "active" ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void deactivateStudent(s)}
+                        >
+                          Deactivate
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => void deleteStudent(s)}
+                        aria-label={`Delete ${s.first_name} ${s.last_name}`}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
