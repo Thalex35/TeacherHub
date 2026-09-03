@@ -73,6 +73,7 @@ function registerAppProtocol() {
 async function checkForUpdates() {
   if (!app.isPackaged) return;
   try {
+    autoUpdater.setFeedURL({ provider: "github", owner: "Thalex35", repo: "TeacherHub" });
     const result = await autoUpdater.checkForUpdates();
     if (!result?.updateInfo || result.updateInfo.version === app.getVersion()) return;
     const choice = await dialog.showMessageBox(mainWindow, {

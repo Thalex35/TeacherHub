@@ -7,7 +7,7 @@
   "main": "electron/main.mjs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Thalex35/Teacher-Desk.git"
+    "url": "https://github.com/Thalex35/TeacherHub.git"
   },
   "scripts": {
     "dev": "vite dev",
@@ -134,7 +134,7 @@
     "publish": {
       "provider": "github",
       "owner": "Thalex35",
-      "repo": "Teacher-Desk",
+      "repo": "TeacherHub",
       "releaseType": "release"
     }
   }
