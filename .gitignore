@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 .output
+release
+release-electron
 .vinxi
 .tanstack/**
 .nitro

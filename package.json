@@ -1,11 +1,20 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "children-management",
+  "version": "1.0.0",
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "main": "electron/main.mjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Thalex35/TeacherHub.git"
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "electron": "electron .",
+    "electron:dev": "concurrently -k \"bun run dev -- --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env ELECTRON_START_URL=http://127.0.0.1:5173 electron .\"",
+    "electron:build": "bun run build && electron-builder --win",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -53,6 +62,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "electron-updater": "^6.8.9",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "jspdf": "^4.2.1",
@@ -79,6 +89,10 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^44.1.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
@@ -89,6 +103,39 @@
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "8.1.5"
+    "vite": "8.1.5",
+    "wait-on": "^9.1.0"
+  },
+  "build": {
+    "appId": "com.thalex35.childrenmanagement",
+    "productName": "Children Management",
+    "executableName": "Children Management",
+    "artifactName": "Children-Management-Setup-${version}.${ext}",
+    "directories": {
+      "output": "release-electron"
+    },
+    "files": [
+      ".output/public/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Children Management"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Thalex35",
+      "repo": "TeacherHub",
+      "releaseType": "release"
+    }
   }
 }
