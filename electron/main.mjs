@@ -1,12 +1,13 @@
 import { app, BrowserWindow, dialog, shell } from "electron";
 import { spawn } from "node:child_process";
 import { createConnection } from "node:net";
-import { autoUpdater } from "electron-updater";
+import updaterPackage from "electron-updater";
 import { join } from "node:path";
 
 const DEV_URL = process.env.ELECTRON_START_URL;
 const SERVER_PORT = 4173;
 const APP_URL = `http://127.0.0.1:${SERVER_PORT}`;
+const { autoUpdater } = updaterPackage;
 let mainWindow;
 let serverProcess;
 
