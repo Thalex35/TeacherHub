@@ -27,6 +27,7 @@ import {
   usePeriods,
   useRemove,
   useSettings,
+  useSubjects,
   useUpdate,
   useUpsert,
   useYears,
@@ -53,12 +54,15 @@ function SettingsPage() {
   const years = useYears();
   const periods = usePeriods();
   const types = useEvaluationTypes();
+  const subjects = useSubjects();
   const weights = useGradeWeights();
 
   const updateSettings = useUpdate("app_settings");
   const upsertWeights = useUpsert("grade_weights", "period_id,evaluation_type_id");
   const insertType = useInsert("evaluation_types");
   const removeType = useRemove("evaluation_types");
+  const insertSubject = useInsert("subjects");
+  const removeSubject = useRemove("subjects");
   const insertYear = useInsert("academic_years");
   const insertPeriod = useInsert("academic_periods");
   const removePeriod = useRemove("academic_periods");
@@ -138,6 +142,7 @@ function SettingsPage() {
   };
 
   const [typeName, setTypeName] = useState("");
+  const [subjectForm, setSubjectForm] = useState({ name: "", code: "", color: "#2563eb" });
   const addType = async () => {
     if (!typeName.trim()) { toast.error("Enter a name for the evaluation type."); return; }
     await insertType.mutateAsync({
@@ -146,6 +151,18 @@ function SettingsPage() {
     });
     setTypeName("");
     toast.success("Evaluation type added.");
+  };
+
+  const addSubject = async () => {
+    const name = subjectForm.name.trim();
+    if (!name) { toast.error("Enter a subject name."); return; }
+    await insertSubject.mutateAsync({
+      name,
+      code: subjectForm.code.trim() || null,
+      color: subjectForm.color,
+    });
+    setSubjectForm({ name: "", code: "", color: "#2563eb" });
+    toast.success("Subject added.");
   };
 
   const [yearForm, setYearForm] = useState({ name: "", start_date: "", end_date: "" });
@@ -301,6 +318,63 @@ function SettingsPage() {
             <Button onClick={saveGeneral} disabled={updateSettings.isPending}>
               Save settings
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Subjects</CardTitle>
+            <CardDescription>Create the subjects used by your classes.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              {(subjects.data ?? []).map((subject) => (
+                <div
+                  key={subject.id}
+                  className="flex items-center gap-3 border-b border-border pb-2 last:border-0"
+                >
+                  <span
+                    className="size-3 rounded-full"
+                    style={{ backgroundColor: subject.color }}
+                  />
+                  <span className="flex-1 text-sm font-medium">{subject.name}</span>
+                  {subject.code ? (
+                    <span className="text-xs text-muted-foreground">{subject.code}</span>
+                  ) : null}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={async () => {
+                      if (!window.confirm(`Delete "${subject.name}"?`)) return;
+                      await removeSubject.mutateAsync(subject.id);
+                    }}
+                    aria-label={`Delete ${subject.name}`}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+              <Input
+                placeholder="Subject name"
+                value={subjectForm.name}
+                onChange={(event) =>
+                  setSubjectForm({ ...subjectForm, name: event.target.value })
+                }
+              />
+              <Input
+                className="sm:w-32"
+                placeholder="Code"
+                value={subjectForm.code}
+                onChange={(event) =>
+                  setSubjectForm({ ...subjectForm, code: event.target.value })
+                }
+              />
+              <Button variant="outline" onClick={addSubject} disabled={insertSubject.isPending}>
+                <Plus className="size-4" /> Add subject
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
