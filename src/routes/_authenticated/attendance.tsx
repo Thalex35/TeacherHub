@@ -103,7 +103,7 @@ function AttendancePage() {
           <Label className="text-xs text-muted-foreground">Session date</Label>
           <Input
             type="date"
-            className="w-[180px]"
+            className="w-full sm:w-[180px]"
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />

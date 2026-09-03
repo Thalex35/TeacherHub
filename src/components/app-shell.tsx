@@ -18,6 +18,7 @@ import {
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { EventNotifications } from "@/components/event-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -114,6 +115,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="font-display font-semibold">TeacherHub</span>
         </header>
         <main className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mb-4 flex justify-end">
+            <EventNotifications />
+          </div>
           {children}
         </main>
       </div>

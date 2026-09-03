@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -50,7 +50,18 @@ const emptyForm = {
   status: "active",
 };
 
+function nextStudentCode(className: string, students: Student[]) {
+  const escapedClassName = className.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^STU-${escapedClassName}-(\\d+)$`, "i");
+  const highestNumber = students.reduce((highest, student) => {
+    const match = pattern.exec(student.student_code);
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+  return `STU-${className}-${String(highestNumber + 1).padStart(2, "0")}`;
+}
+
 function StudentsPage() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const a = useAcademics();
   const insert = useInsert("students");
   const update = useUpdate("students");
@@ -62,6 +73,8 @@ function StudentsPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  if (pathname !== "/students") return <Outlet />;
 
   const filtered = a.students.filter((s) => {
     const q = search.trim().toLowerCase();
@@ -77,7 +90,13 @@ function StudentsPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ ...emptyForm, class_id: a.classes[0]?.id ?? "" });
+    const classId = a.classes[0]?.id ?? "";
+    const className = a.classes.find((klass) => klass.id === classId)?.name ?? "";
+    setForm({
+      ...emptyForm,
+      class_id: classId,
+      student_code: className ? nextStudentCode(className, a.students) : "",
+    });
     setOpen(true);
   };
 
@@ -97,11 +116,15 @@ function StudentsPage() {
     if (!form.first_name.trim() || !form.last_name.trim())
       { toast.error("First and last name are required."); return; }
     if (!form.class_id) { toast.error("A student must belong to a class."); return; }
-    if (!form.student_code.trim()) { toast.error("Student ID is required."); return; }
+    const selectedClass = a.classes.find((klass) => klass.id === form.class_id);
+    if (!selectedClass) { toast.error("Select a valid class."); return; }
+    const studentCode = editing
+      ? form.student_code
+      : nextStudentCode(selectedClass.name, a.students);
     const values = {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
-      student_code: form.student_code.trim(),
+      student_code: editing ? studentCode : undefined,
       class_id: form.class_id,
       status: form.status,
     };
@@ -145,7 +168,7 @@ function StudentsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Name or student ID"
-            className="w-[240px]"
+            className="w-full sm:w-[240px]"
           />
         </div>
         <FilterSelect
@@ -191,12 +214,16 @@ function StudentsPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((s) => (
-                <TableRow key={s.id}>
+                <TableRow
+                  key={s.id}
+                  className="cursor-pointer"
+                >
                   <TableCell className="font-medium">
                     <Link
                       to="/students/$studentId"
                       params={{ studentId: s.id }}
-                      className="hover:underline"
+                      className="inline-block hover:underline"
+                      onClick={(event) => event.stopPropagation()}
                     >
                       {s.first_name} {s.last_name}
                     </Link>
@@ -212,15 +239,36 @@ function StudentsPage() {
                     {a.studentAverage(s.id) === null ? "—" : `${a.studentAverage(s.id)}/${a.scale}`}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openEdit(s);
+                      }}
+                    >
                       <Pencil className="size-4" />
                     </Button>
                     {s.status === "active" ? (
-                      <Button variant="ghost" size="sm" onClick={() => deactivate(s)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void deactivate(s);
+                        }}
+                      >
                         Deactivate
                       </Button>
                     ) : null}
-                    <Button variant="ghost" size="icon" onClick={() => del(s)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void del(s);
+                      }}
+                    >
                       <Trash2 className="size-4" />
                     </Button>
                   </TableCell>
@@ -255,15 +303,26 @@ function StudentsPage() {
               <Label>Student ID</Label>
               <Input
                 value={form.student_code}
-                onChange={(e) => setForm({ ...form, student_code: e.target.value })}
-                placeholder="STU-7e-01"
+                readOnly={!editing}
+                disabled={!editing}
+                placeholder="Generated from class"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Class</Label>
               <Select
                 value={form.class_id}
-                onValueChange={(v) => setForm({ ...form, class_id: v })}
+                onValueChange={(v) => {
+                  const selectedClass = a.classes.find((klass) => klass.id === v);
+                  setForm({
+                    ...form,
+                    class_id: v,
+                    student_code:
+                      selectedClass
+                        ? nextStudentCode(selectedClass.name, a.students)
+                        : form.student_code,
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select class" />

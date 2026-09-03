@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +39,7 @@ import { formatDate, titleCase } from "@/lib/format";
 import { EVENT_TYPES, type CalendarEvent } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
+  validateSearch: z.object({ date: z.string().optional() }),
   head: () => ({
     meta: [
       { title: "Calendar — TeacherHub" },
@@ -45,6 +55,7 @@ const NONE = "__none__";
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 function CalendarPage() {
+  const { date } = Route.useSearch();
   const events = useEvents();
   const classes = useClasses();
   const subjects = useSubjects();
@@ -53,7 +64,7 @@ function CalendarPage() {
   const remove = useRemove("calendar_events");
 
   const [view, setView] = useState<"month" | "week" | "day">("month");
-  const [cursor, setCursor] = useState(new Date());
+  const [cursor, setCursor] = useState(() => (date ? new Date(`${date}T00:00:00`) : new Date()));
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [form, setForm] = useState({
@@ -67,6 +78,10 @@ function CalendarPage() {
   });
 
   const all = events.data ?? [];
+
+  useEffect(() => {
+    if (date) setCursor(new Date(`${date}T00:00:00`));
+  }, [date]);
 
   const range = () => {
     const d = new Date(cursor);
@@ -186,7 +201,7 @@ function CalendarPage() {
           <Button variant="outline" size="icon" onClick={() => shift(-1)}>
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="min-w-[220px] text-center font-medium">{label}</span>
+          <span className="min-w-0 flex-1 text-center font-medium sm:min-w-[220px]">{label}</span>
           <Button variant="outline" size="icon" onClick={() => shift(1)}>
             <ChevronRight className="size-4" />
           </Button>
@@ -203,6 +218,14 @@ function CalendarPage() {
         </Tabs>
       </div>
 
+      {view === "day" ? (
+        <div className="mb-3">
+          <Button variant="outline" size="sm" onClick={() => setView("month")}>
+            <ArrowLeft className="size-4" /> Back to calendar
+          </Button>
+        </div>
+      ) : null}
+
       {view === "month" ? (
         <div className="surface overflow-hidden">
           <div className="grid grid-cols-7 border-b border-border bg-muted text-xs font-medium text-muted-foreground">
@@ -216,7 +239,20 @@ function CalendarPage() {
             {monthCells().map((day, i) => (
               <div
                 key={i}
-                className="min-h-24 border-b border-r border-border p-1.5 last:border-r-0"
+                className="min-h-24 cursor-pointer border-b border-r border-border p-1.5 transition-colors hover:bg-muted/50 last:border-r-0"
+                role={day ? "button" : undefined}
+                tabIndex={day ? 0 : undefined}
+                onClick={() => {
+                  if (!day) return;
+                  setCursor(new Date(`${day}T00:00:00`));
+                  setView("day");
+                }}
+                onKeyDown={(event) => {
+                  if (!day || (event.key !== "Enter" && event.key !== " ")) return;
+                  event.preventDefault();
+                  setCursor(new Date(`${day}T00:00:00`));
+                  setView("day");
+                }}
                 onDoubleClick={() => day && openNew(day)}
               >
                 {day ? (

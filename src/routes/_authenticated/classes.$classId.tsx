@@ -1,15 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAttendance, useLessons, useTopics, useUnits } from "@/lib/data";
+import {
+  useAttendance,
+  useLessons,
+  useRemove,
+  useSubjects,
+  useTopics,
+  useUnits,
+  useUpdate,
+  useYears,
+} from "@/lib/data";
+import { Input } from "@/components/ui/input";
 import { attendanceStats } from "@/lib/calc";
 import { formatDate, titleCase } from "@/lib/format";
 import { useAcademics } from "@/lib/useAcademics";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/classes/$classId")({
   head: () => ({
@@ -33,6 +44,10 @@ function ClassDetail() {
   const topics = useTopics();
   const lessons = useLessons();
   const attendance = useAttendance();
+  const subjects = useSubjects();
+  const years = useYears();
+  const updateStudent = useUpdate("students");
+  const removeStudent = useRemove("students");
 
   const klass = a.classes.find((c) => c.id === classId);
   const students = a.students.filter((s) => s.class_id === classId);
@@ -41,6 +56,40 @@ function ClassDetail() {
   const classLessons = (lessons.data ?? []).filter((l) => l.class_id === classId);
   const classAttendance = (attendance.data ?? []).filter((r) => r.class_id === classId);
   const typeName = (id: string) => a.types.find((t) => t.id === id)?.name ?? "—";
+  const [studentSearch, setStudentSearch] = useState("");
+  const [studentStatus, setStudentStatus] = useState<"all" | "active" | "inactive">("all");
+
+  const filteredStudents = students.filter((student) => {
+    const query = studentSearch.trim().toLowerCase();
+    const matchesSearch =
+      !query ||
+      `${student.first_name} ${student.last_name} ${student.student_code}`
+        .toLowerCase()
+        .includes(query);
+    return matchesSearch && (studentStatus === "all" || student.status === studentStatus);
+  });
+
+  const deactivateStudent = async (student: (typeof students)[number]) => {
+    await updateStudent.mutateAsync({ id: student.id, values: { status: "inactive" } });
+  };
+
+  const deleteStudent = async (student: (typeof students)[number]) => {
+    if (a.grades.some((grade) => grade.student_id === student.id)) return;
+    if (!window.confirm(`Permanently delete ${student.first_name} ${student.last_name}?`)) return;
+    await removeStudent.mutateAsync(student.id);
+  };
+
+  if (
+    a.loading ||
+    units.isLoading ||
+    topics.isLoading ||
+    lessons.isLoading ||
+    attendance.isLoading ||
+    subjects.isLoading ||
+    years.isLoading
+  ) {
+    return <p className="py-12 text-center text-sm text-muted-foreground">Loading class dashboard...</p>;
+  }
 
   if (!klass) {
     return (
@@ -62,10 +111,14 @@ function ClassDetail() {
       </Button>
       <PageHeader
         title={`${klass.name}${klass.section ? ` · ${klass.section}` : ""}`}
-        description={`${students.filter((s) => s.status === "active").length} active students · class average ${
-          a.classAverage(classId) === null ? "—" : `${a.classAverage(classId)}/${a.scale}`
-        }`}
+        description={`${subjects.data?.find((subject) => subject.id === klass.subject_id)?.name ?? "—"} · ${years.data?.find((year) => year.id === klass.academic_year_id)?.name ?? "—"}`}
       />
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <Metric label="All students" value={String(students.length)} />
+        <Metric label="Active students" value={String(students.filter((s) => s.status === "active").length)} />
+        <Metric label="Class average" value={a.classAverage(classId) === null ? "—" : `${a.classAverage(classId)}/${a.scale}`} />
+      </div>
 
       <Tabs defaultValue="students">
         <TabsList className="mb-4 flex-wrap">
@@ -76,6 +129,24 @@ function ClassDetail() {
         </TabsList>
 
         <TabsContent value="students">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+            <Input
+              value={studentSearch}
+              onChange={(event) => setStudentSearch(event.target.value)}
+              placeholder="Search student name or ID"
+              className="sm:max-w-sm"
+            />
+            <select
+              value={studentStatus}
+              onChange={(event) => setStudentStatus(event.target.value as typeof studentStatus)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              aria-label="Filter students by status"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
           <div className="surface overflow-x-auto">
             <Table>
               <TableHeader>
@@ -87,7 +158,7 @@ function ClassDetail() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {students.map((s) => (
+                {filteredStudents.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">
                       <Link
@@ -109,12 +180,31 @@ function ClassDetail() {
                         ? "—"
                         : `${a.studentAverage(s.id)}/${a.scale}`}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {s.status === "active" ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void deactivateStudent(s)}
+                        >
+                          Deactivate
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => void deleteStudent(s)}
+                        aria-label={`Delete ${s.first_name} ${s.last_name}`}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
-                {students.length === 0 ? (
+                {filteredStudents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                      No students in this class yet.
+                      No students match the current filters.
                     </TableCell>
                   </TableRow>
                 ) : null}
@@ -226,6 +316,15 @@ function ClassDetail() {
           </div>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="surface p-4">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="numeric text-2xl font-semibold">{value}</p>
     </div>
   );
 }

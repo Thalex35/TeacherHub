@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { GraduationCap, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/_authenticated/classes")({
 });
 
 function ClassesPage() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const a = useAcademics();
   const subjects = useSubjects();
   const years = useYears();
@@ -58,6 +59,8 @@ function ClassesPage() {
     academic_year_id: "",
     is_active: true,
   });
+
+  if (pathname !== "/classes") return <Outlet />;
 
   const openNew = () => {
     setEditing(null);
@@ -145,12 +148,16 @@ function ClassesPage() {
             </TableHeader>
             <TableBody>
               {a.classes.map((c) => (
-                <TableRow key={c.id}>
+                <TableRow
+                  key={c.id}
+                  className="cursor-pointer"
+                >
                   <TableCell className="font-medium">
                     <Link
                       to="/classes/$classId"
                       params={{ classId: c.id }}
-                      className="hover:underline"
+                      className="inline-block hover:underline"
+                      onClick={(event) => event.stopPropagation()}
                     >
                       {c.name}
                       {c.section ? ` · ${c.section}` : ""}
@@ -170,10 +177,24 @@ function ClassesPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openEdit(c);
+                      }}
+                    >
                       <Pencil className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => del(c)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void del(c);
+                      }}
+                    >
                       <Trash2 className="size-4" />
                     </Button>
                   </TableCell>

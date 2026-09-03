@@ -70,6 +70,8 @@ function CurriculumPage() {
   const [classId, setClassId] = useState<string>("");
   const activeClassId = classId || classes.data?.[0]?.id || "";
   const [editing, setEditing] = useState<Editing>(null);
+  const [collapsedUnits, setCollapsedUnits] = useState<Record<string, boolean>>({});
+  const [collapsedTopics, setCollapsedTopics] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState<{
     title?: string;
     description?: string;
@@ -196,7 +198,7 @@ function CurriculumPage() {
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Class</Label>
           <Select value={activeClassId} onValueChange={setClassId}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Select class" />
             </SelectTrigger>
             <SelectContent>
@@ -208,7 +210,7 @@ function CurriculumPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="min-w-[220px] flex-1 space-y-1.5">
+        <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[220px]">
           <Label className="text-xs text-muted-foreground">
             Progress — {completed}/{classLessons.length} lessons completed
           </Label>
@@ -231,15 +233,34 @@ function CurriculumPage() {
         <div className="space-y-4">
           {classUnits.map((u) => {
             const unitTopics = (topics.data ?? []).filter((t) => t.unit_id === u.id);
+            const unitLessons = classLessons.filter((lesson) => lesson.unit_id === u.id);
+            const unitCompleted = unitLessons.filter((lesson) => lesson.status === "completed").length;
+            const unitCollapsed = collapsedUnits[u.id] ?? false;
             return (
-              <div key={u.id} className="surface p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <h2 className="font-display text-lg font-semibold">{u.title}</h2>
-                    {u.description ? (
-                      <p className="text-sm text-muted-foreground">{u.description}</p>
-                    ) : null}
-                  </div>
+              <div key={u.id} className="surface overflow-hidden">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-muted/30 p-4">
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                    onClick={() =>
+                      setCollapsedUnits({ ...collapsedUnits, [u.id]: !unitCollapsed })
+                    }
+                    aria-expanded={!unitCollapsed}
+                  >
+                    <ChevronDown
+                      className={`mt-1 size-5 shrink-0 text-primary transition-transform ${unitCollapsed ? "-rotate-90" : ""}`}
+                    />
+                    <span className="min-w-0">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-display text-lg font-semibold">{u.title}</span>
+                        <Badge variant="outline">{unitTopics.length} topics</Badge>
+                        <Badge variant="secondary">{unitCompleted}/{unitLessons.length} lessons</Badge>
+                      </span>
+                      {u.description ? (
+                        <span className="mt-1 block text-sm text-muted-foreground">{u.description}</span>
+                      ) : null}
+                    </span>
+                  </button>
                   <div className="flex gap-1">
                     <Button
                       variant="outline"
@@ -261,19 +282,35 @@ function CurriculumPage() {
                   </div>
                 </div>
 
-                {unitTopics.length === 0 ? (
+                {!unitCollapsed && unitTopics.length === 0 ? (
                   <p className="mt-3 text-sm text-muted-foreground">No topics in this unit yet.</p>
                 ) : null}
 
-                <div className="mt-4 space-y-3">
+                {!unitCollapsed ? <div className="space-y-3 p-4">
                   {unitTopics.map((t) => {
                     const topicLessons = classLessons
                       .filter((l) => l.topic_id === t.id)
                       .sort((x, y) => x.position - y.position);
+                    const topicCollapsed = collapsedTopics[t.id] ?? false;
                     return (
-                      <div key={t.id} className="rounded-md border border-border p-3">
+                      <div key={t.id} className="rounded-lg border border-border bg-background/70">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="font-medium">{t.title}</p>
+                          <button
+                            type="button"
+                            className="flex min-w-0 flex-1 items-center gap-2 p-3 text-left"
+                            onClick={() =>
+                              setCollapsedTopics({ ...collapsedTopics, [t.id]: !topicCollapsed })
+                            }
+                            aria-expanded={!topicCollapsed}
+                          >
+                            <ChevronDown
+                              className={`size-4 shrink-0 text-muted-foreground transition-transform ${topicCollapsed ? "-rotate-90" : ""}`}
+                            />
+                            <span className="min-w-0 truncate font-medium">{t.title}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">
+                              {topicLessons.length} {topicLessons.length === 1 ? "lesson" : "lessons"}
+                            </span>
+                          </button>
                           <div className="flex gap-1">
                             <Button
                               variant="outline"
@@ -303,12 +340,12 @@ function CurriculumPage() {
                           </div>
                         </div>
 
-                        {topicLessons.length === 0 ? (
-                          <p className="mt-2 text-sm text-muted-foreground">
+                        {!topicCollapsed && topicLessons.length === 0 ? (
+                          <p className="px-3 pb-3 pt-2 text-sm text-muted-foreground">
                             No lessons for this topic yet.
                           </p>
-                        ) : (
-                          <ul className="mt-2 divide-y divide-border">
+                        ) : !topicCollapsed ? (
+                          <ul className="mt-2 divide-y divide-border px-3">
                             {topicLessons.map((l, i) => (
                               <li key={l.id} className="flex flex-wrap items-center gap-2 py-2">
                                 <span className="flex-1 text-sm">{l.title}</span>
@@ -359,11 +396,11 @@ function CurriculumPage() {
                               </li>
                             ))}
                           </ul>
-                        )}
+                        ) : null}
                       </div>
                     );
                   })}
-                </div>
+                </div> : null}
               </div>
             );
           })}
