@@ -231,7 +231,7 @@ function PlannerPage() {
                   </TableCell>
                   <TableCell>
                     <Select value={l.status} onValueChange={(v) => setStatus(l, v)}>
-                      <SelectTrigger className="h-8 w-[140px]">
+                      <SelectTrigger className="h-8 w-full sm:w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

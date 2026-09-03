@@ -71,7 +71,7 @@ function ReportsPage() {
             value={kind}
             onChange={(v) => setKind(v as ReportKind)}
             includeAll={false}
-            className="w-[200px]"
+            className="w-full sm:w-[200px]"
             options={[
               { value: "class_summary", label: "Class summary" },
               { value: "report_card", label: "Student report card" },
@@ -98,7 +98,7 @@ function ReportsPage() {
               value={activeStudent?.id ?? ""}
               onChange={setStudentId}
               includeAll={false}
-              className="w-[220px]"
+              className="w-full sm:w-[220px]"
               options={students.map((s) => ({ value: s.id, label: fullName(s) }))}
             />
           ) : null}

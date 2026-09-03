@@ -201,7 +201,7 @@ function CalendarPage() {
           <Button variant="outline" size="icon" onClick={() => shift(-1)}>
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="min-w-[220px] text-center font-medium">{label}</span>
+          <span className="min-w-0 flex-1 text-center font-medium sm:min-w-[220px]">{label}</span>
           <Button variant="outline" size="icon" onClick={() => shift(1)}>
             <ChevronRight className="size-4" />
           </Button>

@@ -16,7 +16,7 @@ export function FilterSelect({
   options,
   placeholder = "All",
   includeAll = true,
-  className = "w-[170px]",
+  className = "w-full sm:w-[170px]",
 }: {
   label?: string;
   value: string;

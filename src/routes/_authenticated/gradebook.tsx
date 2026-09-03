@@ -137,7 +137,7 @@ function Gradebook() {
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Student</Label>
           <Input
-            className="w-[200px]"
+            className="w-full sm:w-[200px]"
             placeholder="Search student"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

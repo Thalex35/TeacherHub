@@ -168,7 +168,7 @@ function StudentsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Name or student ID"
-            className="w-[240px]"
+            className="w-full sm:w-[240px]"
           />
         </div>
         <FilterSelect
