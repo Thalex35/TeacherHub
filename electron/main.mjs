@@ -1,15 +1,15 @@
-import { app, BrowserWindow, dialog, net, protocol, shell } from "electron";
-import { autoUpdater } from "electron-updater";
-import { dirname, join, relative, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { app, BrowserWindow, dialog, shell } from "electron";
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import { createConnection } from "node:net";
+import { join } from "node:path";
 
-const APP_SCHEME = "app";
 const DEV_URL = process.env.ELECTRON_START_URL;
+const SERVER_PORT = 4173;
+const APP_URL = `http://127.0.0.1:${SERVER_PORT}`;
+const { autoUpdater } = createRequire(import.meta.url)("electron-updater");
 let mainWindow;
-
-function publicRoot() {
-  return join(app.getAppPath(), ".output", "public");
-}
+let serverProcess;
 
 function openExternal(url) {
   try {
@@ -44,7 +44,7 @@ function createWindow() {
     return { action: "deny" };
   });
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    const allowed = DEV_URL ? url.startsWith(DEV_URL) : url.startsWith(`${APP_SCHEME}://`);
+    const allowed = DEV_URL ? url.startsWith(DEV_URL) : url.startsWith(APP_URL);
     if (!allowed) {
       event.preventDefault();
       openExternal(url);
@@ -52,21 +52,42 @@ function createWindow() {
   });
 
   if (DEV_URL) void mainWindow.loadURL(DEV_URL);
-  else void mainWindow.loadURL(`${APP_SCHEME}://index.html`);
+  else void mainWindow.loadURL(APP_URL);
 }
 
-function registerAppProtocol() {
-  protocol.handle(APP_SCHEME, async (request) => {
-    const requestedPath = new URL(request.url).pathname.replace(/^\/+/, "");
-    const root = resolve(publicRoot());
-    const candidate = resolve(root, requestedPath || "index.html");
-    const isInsideRoot = relative(root, candidate) && !relative(root, candidate).startsWith("..");
-    const safeCandidate = isInsideRoot ? candidate : join(root, "index.html");
-    const fallback = join(root, "index.html");
-    const fileUrl = pathToFileURL(safeCandidate).toString();
-    const response = await net.fetch(fileUrl);
-    if (response.ok) return response;
-    return net.fetch(pathToFileURL(fallback).toString());
+function startServer() {
+  const serverEntry = join(app.getAppPath(), ".output", "server", "index.mjs");
+  serverProcess = spawn(process.execPath, [serverEntry], {
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: "1",
+      PORT: String(SERVER_PORT),
+      HOST: "127.0.0.1",
+    },
+    stdio: "ignore",
+  });
+  serverProcess.on("error", () => {
+    serverProcess = undefined;
+  });
+}
+
+function waitForServer() {
+  return new Promise((resolvePromise, reject) => {
+    const startedAt = Date.now();
+    const check = () => {
+      const connection = createConnection({ host: "127.0.0.1", port: SERVER_PORT });
+      connection.once("connect", () => {
+        connection.destroy();
+        resolvePromise();
+      });
+      connection.once("error", () => {
+        connection.destroy();
+        if (Date.now() - startedAt > 15000)
+          reject(new Error("The local app server did not start."));
+        else setTimeout(check, 100);
+      });
+    };
+    check();
   });
 }
 
@@ -82,7 +103,7 @@ async function checkForUpdates() {
       defaultId: 0,
       cancelId: 1,
       title: "Update available",
-      message: `Children Management ${result.updateInfo.version} is available.`,
+      message: `TeacherHub ${result.updateInfo.version} is available.`,
       detail: "The update will be downloaded from the configured GitHub Releases repository.",
     });
     if (choice.response === 0) await autoUpdater.downloadUpdate();
@@ -101,20 +122,16 @@ autoUpdater.on("update-downloaded", async () => {
     cancelId: 1,
     title: "Update ready",
     message: "The update has been downloaded.",
-    detail: "Restart Children Management now to install it.",
+    detail: "Restart TeacherHub now to install it.",
   });
   if (choice.response === 0) autoUpdater.quitAndInstall();
 });
 
-if (!DEV_URL) {
-  protocol.registerSchemesAsPrivileged([
-    { scheme: APP_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } },
-  ]);
-}
-
 app.whenReady().then(() => {
-  if (!DEV_URL) registerAppProtocol();
-  createWindow();
+  if (!DEV_URL) startServer();
+  void (DEV_URL ? Promise.resolve() : waitForServer())
+    .then(() => createWindow())
+    .catch(() => app.quit());
   setTimeout(() => void checkForUpdates(), 10000);
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -122,5 +139,8 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
+  serverProcess?.kill();
   if (process.platform !== "darwin") app.quit();
 });
+
+app.on("before-quit", () => serverProcess?.kill());
