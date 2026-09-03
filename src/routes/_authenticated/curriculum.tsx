@@ -235,7 +235,7 @@ function CurriculumPage() {
             const unitTopics = (topics.data ?? []).filter((t) => t.unit_id === u.id);
             const unitLessons = classLessons.filter((lesson) => lesson.unit_id === u.id);
             const unitCompleted = unitLessons.filter((lesson) => lesson.status === "completed").length;
-            const unitCollapsed = collapsedUnits[u.id] ?? false;
+            const unitCollapsed = collapsedUnits[u.id] ?? true;
             return (
               <div key={u.id} className="surface overflow-hidden">
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-muted/30 p-4">
@@ -291,7 +291,7 @@ function CurriculumPage() {
                     const topicLessons = classLessons
                       .filter((l) => l.topic_id === t.id)
                       .sort((x, y) => x.position - y.position);
-                    const topicCollapsed = collapsedTopics[t.id] ?? false;
+                    const topicCollapsed = collapsedTopics[t.id] ?? true;
                     return (
                       <div key={t.id} className="rounded-lg border border-border bg-background/70">
                         <div className="flex flex-wrap items-center justify-between gap-2">
