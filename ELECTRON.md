@@ -1,4 +1,4 @@
-# Children Management desktop app
+# TeacherHub desktop app
 
 ## Development
 

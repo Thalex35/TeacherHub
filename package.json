@@ -14,7 +14,7 @@
     "build": "vite build",
     "electron": "electron .",
     "electron:dev": "concurrently -k \"bun run dev -- --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env ELECTRON_START_URL=http://127.0.0.1:5173 electron .\"",
-    "electron:build": "bun run build && electron-builder --win",
+    "electron:build": "cross-env ELECTRON_BUILD=1 bun run build && electron-builder --win",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -108,14 +108,14 @@
   },
   "build": {
     "appId": "com.thalex35.childrenmanagement",
-    "productName": "Children Management",
-    "executableName": "Children Management",
-    "artifactName": "Children-Management-Setup-${version}.${ext}",
+    "productName": "TeacherHub",
+    "executableName": "TeacherHub",
+    "artifactName": "TeacherHub-Setup-${version}.${ext}",
     "directories": {
       "output": "release-electron"
     },
     "files": [
-      ".output/public/**/*",
+      ".output/**/*",
       "electron/**/*",
       "package.json"
     ],
@@ -129,7 +129,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Children Management"
+      "shortcutName": "TeacherHub"
     },
     "publish": {
       "provider": "github",
