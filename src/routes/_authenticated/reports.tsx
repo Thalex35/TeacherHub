@@ -1,14 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Printer } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { FilterBar, FilterSelect } from "@/components/filters";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { attendanceStats } from "@/lib/calc";
 import { useAttendance } from "@/lib/data";
 import { formatDate, fullName } from "@/lib/format";
+import {
+  exportCsv,
+  exportExcel,
+  exportPdf,
+  safeFilename,
+  type ExportReport,
+} from "@/lib/report-export";
 import { useAcademics } from "@/lib/useAcademics";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -36,9 +51,11 @@ function ReportsPage() {
   const [classId, setClassId] = useState("");
   const [periodId, setPeriodId] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [exporting, setExporting] = useState<string | null>(null);
 
   const activeClass = classId || a.classes[0]?.id || "";
-  const activePeriod = periodId || a.periods.find((p) => p.is_current)?.id || a.periods[0]?.id || "";
+  const activePeriod =
+    periodId || a.periods.find((p) => p.is_current)?.id || a.periods[0]?.id || "";
   const students = a.students.filter((s) => s.class_id === activeClass);
   const activeStudent = students.find((s) => s.id === studentId) ?? students[0];
   const klass = a.classes.find((c) => c.id === activeClass);
@@ -51,6 +68,159 @@ function ReportsPage() {
       : kind === "report_card"
         ? "Student report card"
         : "Attendance report";
+  const reportMeta = {
+    schoolName: a.settings?.school_name ?? "School",
+    className: klass?.name ?? "—",
+    control: period?.sort_order ?? 1,
+    teacherName: a.settings?.teacher_name ?? "—",
+    date: formatDate(new Date().toISOString().slice(0, 10)),
+  };
+
+  const buildReport = (): ExportReport => {
+    if (kind === "class_summary") {
+      return {
+        title,
+        subtitle: `${klass?.name ?? "Class"} · ${period?.name ?? "Period"}`,
+        ...reportMeta,
+        columns: [
+          { key: "student_id", header: "Student ID" },
+          { key: "first_name", header: "First name" },
+          { key: "last_name", header: "Last name" },
+          { key: "status", header: "Status" },
+          { key: "average", header: "Average" },
+          { key: "final", header: "Final grade" },
+          { key: "attendance", header: "Attendance" },
+        ],
+        rows: students.map((s) => {
+          const stats = attendanceStats(
+            rows.filter((r) => r.class_id === activeClass && r.student_id === s.id),
+          );
+          return {
+            student_id: s.student_code,
+            first_name: s.first_name,
+            last_name: s.last_name,
+            status: s.status,
+            average: a.studentAverage(s.id, activePeriod),
+            final: a.finalGrade(s.id, activePeriod).value,
+            attendance: stats.rate === null ? null : `${stats.rate}%`,
+          };
+        }),
+      };
+    }
+
+    if (kind === "report_card" && activeStudent) {
+      const assessments = a.assessments
+        .filter((x) => x.class_id === activeClass && x.period_id === activePeriod)
+        .sort((x, y) => x.date.localeCompare(y.date));
+      return {
+        title,
+        subtitle: `${fullName(activeStudent)} · ${klass?.name ?? "Class"} · ${period?.name ?? "Period"}`,
+        ...reportMeta,
+        columns: [
+          { key: "student_id", header: "Student ID" },
+          { key: "first_name", header: "First name" },
+          { key: "last_name", header: "Last name" },
+          { key: "class", header: "Class" },
+          { key: "assessment", header: "Assessment" },
+          { key: "type", header: "Type" },
+          { key: "date", header: "Date" },
+          { key: "score", header: "Score" },
+        ],
+        rows: (assessments.length ? assessments : [null]).map((assessment) => {
+          if (!assessment) {
+            return {
+              student_id: activeStudent.student_code,
+              first_name: activeStudent.first_name,
+              last_name: activeStudent.last_name,
+              class: klass?.name ?? "—",
+              assessment: "No assessments",
+              type: null,
+              date: null,
+              score: null,
+            };
+          }
+          const grade = a.grades.find(
+            (candidate) =>
+              candidate.assessment_id === assessment.id &&
+              candidate.student_id === activeStudent.id,
+          );
+          return {
+            student_id: activeStudent.student_code,
+            first_name: activeStudent.first_name,
+            last_name: activeStudent.last_name,
+            class: klass?.name ?? "—",
+            assessment: assessment.title,
+            type: a.types.find((type) => type.id === assessment.evaluation_type_id)?.name ?? "—",
+            date: formatDate(assessment.date),
+            score:
+              grade?.score === null || !grade
+                ? null
+                : `${Number(grade.score)} / ${Number(assessment.max_grade)}`,
+          };
+        }),
+      };
+    }
+
+    return {
+      title,
+      subtitle: `${klass?.name ?? "Class"} · ${period?.name ?? "Period"}`,
+      ...reportMeta,
+      columns: [
+        { key: "student_id", header: "Student ID" },
+        { key: "first_name", header: "First name" },
+        { key: "last_name", header: "Last name" },
+        { key: "class", header: "Class" },
+        { key: "present", header: "Present" },
+        { key: "absent", header: "Absent" },
+        { key: "late", header: "Late" },
+        { key: "excused", header: "Excused" },
+        { key: "rate", header: "Rate" },
+      ],
+      rows: students.map((s) => {
+        const stats = attendanceStats(
+          rows.filter((r) => r.class_id === activeClass && r.student_id === s.id),
+        );
+        return {
+          student_id: s.student_code,
+          first_name: s.first_name,
+          last_name: s.last_name,
+          class: klass?.name ?? "—",
+          present: stats.present,
+          absent: stats.absent,
+          late: stats.late,
+          excused: stats.excused,
+          rate: stats.rate === null ? null : `${stats.rate}%`,
+        };
+      }),
+    };
+  };
+
+  const download = async (format: "pdf" | "csv" | "xlsx") => {
+    const report = buildReport();
+    if (!report.rows.length) {
+      toast.error("No report data available to export.");
+      return;
+    }
+    const subject =
+      kind === "report_card" && activeStudent
+        ? `report-card-${fullName(activeStudent)}-${klass?.name ?? "class"}`
+        : kind === "class_summary"
+          ? `class-summary-${klass?.name ?? "class"}`
+          : `attendance-report-${klass?.name ?? "class"}`;
+    const key = `${kind}-${format}`;
+    setExporting(key);
+    try {
+      const filename = `${safeFilename(subject)}.${format}`;
+      if (format === "pdf") exportPdf(report, filename);
+      else if (format === "csv") exportCsv(report, filename);
+      else exportExcel(report, filename);
+      toast.success(`${format.toUpperCase()} downloaded.`);
+    } catch {
+      toast.error(`Unable to generate ${format.toUpperCase()} report.`);
+    } finally {
+      setExporting(null);
+    }
+  };
 
   return (
     <div>
@@ -59,9 +229,26 @@ function ReportsPage() {
           title="Reports"
           description="Generate a clean, printable document for any class, student or period."
           actions={
-            <Button onClick={() => window.print()}>
-              <Printer className="size-4" /> Print
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => window.print()}>
+                <Printer className="size-4" /> Print
+              </Button>
+              {(["pdf", "csv", "xlsx"] as const).map((format) => (
+                <Button
+                  key={format}
+                  onClick={() => void download(format)}
+                  disabled={Boolean(exporting)}
+                  title={`Download ${format.toUpperCase()}`}
+                >
+                  <Download className="size-4" />{" "}
+                  {exporting === `${kind}-${format}`
+                    ? "Generating..."
+                    : format === "xlsx"
+                      ? "Excel"
+                      : format.toUpperCase()}
+                </Button>
+              ))}
+            </div>
           }
         />
 
@@ -188,7 +375,9 @@ function ReportsPage() {
                         </TableCell>
                         <TableCell>{formatDate(x.date)}</TableCell>
                         <TableCell className="numeric text-right">
-                          {g?.score === null || !g ? "—" : `${Number(g.score)} / ${Number(x.max_grade)}`}
+                          {g?.score === null || !g
+                            ? "—"
+                            : `${Number(g.score)} / ${Number(x.max_grade)}`}
                         </TableCell>
                       </TableRow>
                     );
@@ -196,7 +385,10 @@ function ReportsPage() {
               </TableBody>
             </Table>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <SummaryCell label="Average" value={a.studentAverage(activeStudent.id, activePeriod)} />
+              <SummaryCell
+                label="Average"
+                value={a.studentAverage(activeStudent.id, activePeriod)}
+              />
               <SummaryCell
                 label="Final grade"
                 value={a.finalGrade(activeStudent.id, activePeriod).value}
@@ -261,9 +453,7 @@ function SummaryCell({
   return (
     <div className="rounded-lg border border-border p-3">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="numeric text-xl font-semibold">
-        {value === null ? "—" : `${value}${suffix}`}
-      </p>
+      <p className="numeric text-xl font-semibold">{value === null ? "—" : `${value}${suffix}`}</p>
     </div>
   );
 }
