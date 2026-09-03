@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, shell } from "electron";
+import { app, BrowserWindow, Menu, dialog, shell } from "electron";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { createConnection } from "node:net";
@@ -128,6 +128,7 @@ autoUpdater.on("update-downloaded", async () => {
 });
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   if (!DEV_URL) startServer();
   void (DEV_URL ? Promise.resolve() : waitForServer())
     .then(() => createWindow())
