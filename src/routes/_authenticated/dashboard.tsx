@@ -1,8 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarDays, ClipboardList, GraduationCap, Users } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  ClipboardList,
+  GraduationCap,
+  Plus,
+  StickyNote,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEvents } from "@/lib/data";
@@ -24,10 +35,58 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
+type QuickNote = {
+  id: string;
+  text: string;
+  done: boolean;
+};
+
+const QUICK_NOTES_KEY = "teacherhub.quick-notes";
+
 function Dashboard() {
   const a = useAcademics();
   const events = useEvents();
+  const [notes, setNotes] = useState<QuickNote[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = window.localStorage.getItem(QUICK_NOTES_KEY);
+      if (!saved) return [];
+      const parsed = JSON.parse(saved) as QuickNote[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [draft, setDraft] = useState("");
   const today = new Date().toISOString().slice(0, 10);
+
+  useEffect(() => {
+    window.localStorage.setItem(QUICK_NOTES_KEY, JSON.stringify(notes));
+  }, [notes]);
+
+  const addNote = () => {
+    const value = draft.trim();
+    if (!value) return;
+    setNotes((current) => [
+      {
+        id:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        text: value,
+        done: false,
+      },
+      ...current,
+    ]);
+    setDraft("");
+  };
+
+  const toggleNote = (id: string) =>
+    setNotes((current) =>
+      current.map((note) => (note.id === id ? { ...note, done: !note.done } : note)),
+    );
+
+  const removeNote = (id: string) => setNotes((current) => current.filter((note) => note.id !== id));
 
   const currentPeriod =
     a.periods.find((p) => p.id === a.settings?.current_period_id) ??
@@ -86,7 +145,67 @@ function Dashboard() {
         <Stat icon={CalendarDays} label="Upcoming events" value={upcomingEvents.length} />
       </div>
 
-      <section className="mt-8">
+      <section className="mt-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+        <div className="surface p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <StickyNote className="size-4 text-primary" />
+            <h2 className="text-lg font-semibold">Quick notes</h2>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") addNote();
+              }}
+              placeholder="Add a classroom reminder"
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-0 placeholder:text-muted-foreground focus:border-primary"
+            />
+            <Button type="button" onClick={addNote} size="sm" className="gap-2">
+              <Plus className="size-4" /> Add
+            </Button>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {notes.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                No reminders yet. Add one to keep track of follow-ups.
+              </div>
+            ) : (
+              notes.map((note) => (
+                <div key={note.id} className="flex items-start gap-3 rounded-md border border-border bg-background p-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleNote(note.id)}
+                    className={
+                      "mt-0.5 grid size-5 place-items-center rounded-full border " +
+                      (note.done
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-muted-foreground/40 bg-transparent text-transparent")
+                    }
+                    aria-label={note.done ? "Mark note as incomplete" : "Mark note as complete"}
+                  >
+                    <Check className="size-3" />
+                  </button>
+                  <p className={"flex-1 text-sm " + (note.done ? "text-muted-foreground line-through" : "text-foreground")}>
+                    {note.text}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => removeNote(note.id)}
+                    className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    aria-label="Delete note"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="surface p-4">
         <h2 className="mb-3 text-lg font-semibold">Classes</h2>
         {activeClasses.length === 0 ? (
           <EmptyState
@@ -95,7 +214,7 @@ function Dashboard() {
             description="Create your first class to start managing students and curriculum."
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-3">
             {activeClasses.map((c) => {
               const count = a.students.filter(
                 (s) => s.class_id === c.id && s.status === "active",
@@ -106,14 +225,14 @@ function Dashboard() {
                   key={c.id}
                   to="/classes/$classId"
                   params={{ classId: c.id }}
-                  className="surface p-4 transition-colors hover:border-primary/50"
+                  className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/50"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-display text-lg font-semibold">{c.name}</span>
-                    <Badge variant="secondary">{count} students</Badge>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-display text-base font-semibold">{c.name}</span>
+                    <Badge variant="secondary">{count}</Badge>
                   </div>
-                  <p className="mt-3 text-sm text-muted-foreground">Period average</p>
-                  <p className="numeric text-2xl font-semibold">
+                  <p className="mt-2 text-xs text-muted-foreground">Period average</p>
+                  <p className="numeric text-xl font-semibold">
                     {average === null ? "—" : `${average}/${a.scale}`}
                   </p>
                 </Link>
@@ -121,6 +240,7 @@ function Dashboard() {
             })}
           </div>
         )}
+        </div>
       </section>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
