@@ -206,7 +206,7 @@ function SettingsPage() {
         description="School identity, academic structure and the rules used to calculate grades."
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>School &amp; teacher</CardTitle>
@@ -355,7 +355,7 @@ function SettingsPage() {
                 </div>
               ))}
             </div>
-            <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+            <div className="grid items-start gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
               <Input
                 placeholder="Subject name"
                 value={subjectForm.name}

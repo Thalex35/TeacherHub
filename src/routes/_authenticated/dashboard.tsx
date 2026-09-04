@@ -145,14 +145,14 @@ function Dashboard() {
         <Stat icon={CalendarDays} label="Upcoming events" value={upcomingEvents.length} />
       </div>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+      <section className="mt-8 grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]">
         <div className="surface p-4">
           <div className="mb-4 flex items-center gap-2">
             <StickyNote className="size-4 text-primary" />
             <h2 className="text-lg font-semibold">Quick notes</h2>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex min-w-0 flex-wrap gap-2 sm:flex-nowrap">
             <input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
@@ -160,9 +160,9 @@ function Dashboard() {
                 if (event.key === "Enter") addNote();
               }}
               placeholder="Add a classroom reminder"
-              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-0 placeholder:text-muted-foreground focus:border-primary"
+              className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-0 placeholder:text-muted-foreground focus:border-primary"
             />
-            <Button type="button" onClick={addNote} size="sm" className="gap-2">
+            <Button type="button" onClick={addNote} size="sm" className="shrink-0 gap-2">
               <Plus className="size-4" /> Add
             </Button>
           </div>
