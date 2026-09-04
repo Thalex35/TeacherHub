@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   CalendarDays,
   Check,
+  ChevronDown,
   ClipboardList,
   GraduationCap,
   Plus,
@@ -12,7 +13,6 @@ import {
 import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +58,7 @@ function Dashboard() {
     }
   });
   const [draft, setDraft] = useState("");
+  const [assessmentsOpen, setAssessmentsOpen] = useState(true);
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -93,6 +94,19 @@ function Dashboard() {
     a.periods.find((p) => p.is_current) ??
     a.periods[0];
   const activeClasses = a.classes.filter((c) => c.is_active);
+  const classPerformance = activeClasses
+    .map((classItem) => ({
+      classItem,
+      average: a.classAverage(classItem.id, currentPeriod?.id),
+      count: a.students.filter(
+        (student) => student.class_id === classItem.id && student.status === "active",
+      ).length,
+    }))
+    .sort((left, right) => {
+      if (left.average === null) return 1;
+      if (right.average === null) return -1;
+      return left.average - right.average;
+    });
   const activeStudents = a.students.filter((s) => s.status === "active");
   const upcomingEvents = (events.data ?? []).filter((e) => e.event_date >= today).slice(0, 6);
   const upcomingEvaluations = a.assessments
@@ -135,8 +149,8 @@ function Dashboard() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={GraduationCap} label="Classes" value={activeClasses.length} />
         <Stat icon={Users} label="Active students" value={activeStudents.length} />
+        <Stat icon={GraduationCap} label="Classes" value={activeClasses.length} />
         <Stat
           icon={ClipboardList}
           label={`${currentPeriod?.name ?? "Period"} assessments`}
@@ -145,114 +159,132 @@ function Dashboard() {
         <Stat icon={CalendarDays} label="Upcoming events" value={upcomingEvents.length} />
       </div>
 
-      <section className="mt-8 grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+      <section className="mt-8 grid items-start gap-6 lg:grid-cols-[3fr_2fr]">
         <div className="space-y-6">
-          <div className="surface p-4">
-          <div className="mb-4 flex items-center gap-2">
-            <StickyNote className="size-4 text-primary" />
-            <h2 className="text-lg font-semibold">Quick notes</h2>
-          </div>
-
-          <div className="flex min-w-0 flex-wrap gap-2 sm:flex-nowrap">
-            <input
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") addNote();
-              }}
-              placeholder="Add a classroom reminder"
-              className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-0 placeholder:text-muted-foreground focus:border-primary"
-            />
-            <Button type="button" onClick={addNote} size="sm" className="shrink-0 gap-2">
-              <Plus className="size-4" /> Add
-            </Button>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {notes.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                No reminders yet. Add one to keep track of follow-ups.
-              </div>
-            ) : (
-              notes.map((note) => (
-                <div key={note.id} className="flex items-start gap-3 rounded-md border border-border bg-background p-3">
-                  <button
-                    type="button"
-                    onClick={() => toggleNote(note.id)}
-                    className={
-                      "mt-0.5 grid size-5 place-items-center rounded-full border " +
-                      (note.done
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-muted-foreground/40 bg-transparent text-transparent")
-                    }
-                    aria-label={note.done ? "Mark note as incomplete" : "Mark note as complete"}
-                  >
-                    <Check className="size-3" />
-                  </button>
-                  <p className={"flex-1 text-sm " + (note.done ? "text-muted-foreground line-through" : "text-foreground")}>
-                    {note.text}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => removeNote(note.id)}
-                    className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    aria-label="Delete note"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-          </div>
-
-          <Panel title="Upcoming events" empty="No upcoming events." items={upcomingEvents.length}>
+          <Panel
+            title="Upcoming events"
+            empty="No upcoming events."
+            items={upcomingEvents.length}
+            prominent
+          >
             {upcomingEvents.map((e) => (
               <Row
                 key={e.id}
                 left={e.title}
                 sub={`${titleCase(e.event_type)}${e.class_id ? ` · ${classById.get(e.class_id)?.name ?? ""}` : ""}`}
                 right={formatDate(e.event_date)}
+                prominent
               />
             ))}
           </Panel>
 
-          <Panel
-            title="Recent assessments"
-            empty="No assessments recorded."
-            items={recentAssessments.length}
-          >
-            {recentAssessments.map((x) => (
-              <Row
-                key={x.id}
-                left={x.title}
-                sub={classById.get(x.class_id)?.name ?? ""}
-                right={
-                  a.assessmentAverage(x.id) === null
-                    ? formatDate(x.date)
-                    : `avg ${a.assessmentAverage(x.id)}/${a.scale}`
-                }
+          <div className="surface p-4">
+            <button
+              type="button"
+              onClick={() => setAssessmentsOpen((open) => !open)}
+              className="flex w-full items-center justify-between gap-3 text-left"
+              aria-expanded={assessmentsOpen}
+            >
+              <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Recent assessments
+              </span>
+              <ChevronDown className={`size-4 transition-transform ${assessmentsOpen ? "rotate-180" : ""}`} />
+            </button>
+            {assessmentsOpen ? (
+              recentAssessments.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No assessments recorded.
+                </p>
+              ) : (
+                <div className="mt-3 divide-y divide-border">
+                  {recentAssessments.map((x) => (
+                    <Row
+                      key={x.id}
+                      left={x.title}
+                      sub={classById.get(x.class_id)?.name ?? ""}
+                      right={
+                        a.assessmentAverage(x.id) === null
+                          ? formatDate(x.date)
+                          : `avg ${a.assessmentAverage(x.id)}/${a.scale}`
+                      }
+                    />
+                  ))}
+                </div>
+              )
+            ) : null}
+          </div>
+
+          <div className="surface p-4">
+            <div className="mb-4 flex items-center gap-2">
+              <StickyNote className="size-4 text-primary" />
+              <h2 className="text-lg font-semibold">Quick notes</h2>
+            </div>
+            <div className="flex min-w-0 flex-wrap gap-2 sm:flex-nowrap">
+              <input
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") addNote();
+                }}
+                placeholder="Add a classroom reminder"
+                className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-0 placeholder:text-muted-foreground focus:border-primary"
               />
-            ))}
-          </Panel>
+              <Button type="button" onClick={addNote} size="sm" className="shrink-0 gap-2">
+                <Plus className="size-4" /> Add
+              </Button>
+            </div>
+            <div className="mt-4 space-y-2">
+              {notes.length === 0 ? (
+                <div className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                  No reminders yet. Add one to keep track of follow-ups.
+                </div>
+              ) : (
+                notes.map((note) => (
+                  <div key={note.id} className="flex items-start gap-3 rounded-md border border-border bg-background p-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleNote(note.id)}
+                      className={
+                        "mt-0.5 grid size-5 place-items-center rounded-full border " +
+                        (note.done
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-muted-foreground/40 bg-transparent text-transparent")
+                      }
+                      aria-label={note.done ? "Mark note as incomplete" : "Mark note as complete"}
+                    >
+                      <Check className="size-3" />
+                    </button>
+                    <p className={"flex-1 text-sm " + (note.done ? "text-muted-foreground line-through" : "text-foreground")}>
+                      {note.text}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => removeNote(note.id)}
+                      className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label="Delete note"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">
           <div className="surface p-4">
-        <h2 className="mb-3 text-lg font-semibold">Classes</h2>
+        <h2 className="mb-3 text-lg font-semibold">Classes performance</h2>
         {activeClasses.length === 0 ? (
           <EmptyState
             icon={GraduationCap}
             title="No classes yet"
             description="Create your first class to start managing students and curriculum."
           />
-        ) : (
-          <div className="grid gap-3">
-            {activeClasses.map((c) => {
-              const count = a.students.filter(
-                (s) => s.class_id === c.id && s.status === "active",
-              ).length;
-              const average = a.classAverage(c.id, currentPeriod?.id);
+          ) : (
+            <div className="grid gap-3">
+              {classPerformance.map(({ classItem: c, count, average }) => {
+                const performance = getPerformanceLevel(average, a.scale);
               return (
                 <Link
                   key={c.id}
@@ -260,14 +292,21 @@ function Dashboard() {
                   params={{ classId: c.id }}
                   className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/50"
                 >
-                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2">
                     <span className="font-display text-base font-semibold">{c.name}</span>
-                    <Badge variant="secondary">{count}</Badge>
+                      <span className="text-xs text-muted-foreground">{count} students</span>
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">Period average</p>
-                  <p className="numeric text-xl font-semibold">
-                    {average === null ? "—" : `${average}/${a.scale}`}
-                  </p>
+                    <div className="mt-2 flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Period average</p>
+                        <p className="numeric text-xl font-semibold">
+                          {average === null ? "—" : `${average}/${a.scale}`}
+                        </p>
+                      </div>
+                      <span className={`rounded-md border px-2 py-0.5 text-xs font-semibold ${performance.className}`}>
+                        {performance.label}
+                      </span>
+                    </div>
                 </Link>
               );
             })}
@@ -305,7 +344,7 @@ function Dashboard() {
           })}
         </Panel>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -329,15 +368,17 @@ function Panel({
   children,
   items,
   empty,
+  prominent = false,
 }: {
   title: string;
   children: React.ReactNode;
   items: number;
   empty: string;
+  prominent?: boolean;
 }) {
   return (
-    <div className="surface p-4">
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className={`surface ${prominent ? "p-5" : "p-4"}`}>
+      <h3 className={`mb-3 font-semibold uppercase tracking-wide text-muted-foreground ${prominent ? "text-base" : "text-sm"}`}>
         {title}
       </h3>
       {items === 0 ? (
@@ -349,14 +390,39 @@ function Panel({
   );
 }
 
-function Row({ left, sub, right }: { left: string; sub?: string; right?: string }) {
+function Row({ left, sub, right, prominent = false }: { left: string; sub?: string; right?: string; prominent?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3 py-2.5">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{left}</p>
+        <p className={`truncate font-medium ${prominent ? "text-base" : "text-sm"}`}>{left}</p>
         {sub ? <p className="truncate text-xs text-muted-foreground">{sub}</p> : null}
       </div>
       <span className="numeric shrink-0 text-sm text-muted-foreground">{right}</span>
     </div>
   );
+}
+
+function getPerformanceLevel(average: number | null, scale: number) {
+  if (average === null) {
+    return {
+      label: "No data",
+      className: "border-border bg-muted text-muted-foreground",
+    };
+  }
+  if (average / scale >= 0.7) {
+    return {
+      label: "Strong",
+      className: "border-success/30 bg-success/10 text-success",
+    };
+  }
+  if (average / scale >= 0.5) {
+    return {
+      label: "Watch",
+      className: "border-warning/40 bg-warning/15 text-warning-foreground",
+    };
+  }
+  return {
+    label: "Needs support",
+    className: "border-destructive/30 bg-destructive/10 text-destructive",
+  };
 }
