@@ -331,15 +331,15 @@ function SettingsPage() {
               {(subjects.data ?? []).map((subject) => (
                 <div
                   key={subject.id}
-                  className="flex items-center gap-3 border-b border-border pb-2 last:border-0"
+                  className="flex min-w-0 flex-wrap items-center gap-3 border-b border-border pb-2 last:border-0"
                 >
                   <span
                     className="size-3 rounded-full"
                     style={{ backgroundColor: subject.color }}
                   />
-                  <span className="flex-1 text-sm font-medium">{subject.name}</span>
+                  <span className="min-w-0 flex-1 break-words text-sm font-medium">{subject.name}</span>
                   {subject.code ? (
-                    <span className="text-xs text-muted-foreground">{subject.code}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{subject.code}</span>
                   ) : null}
                   <Button
                     variant="ghost"

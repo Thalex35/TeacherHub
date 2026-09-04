@@ -146,7 +146,8 @@ function Dashboard() {
       </div>
 
       <section className="mt-8 grid items-start gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-        <div className="surface p-4">
+        <div className="space-y-6">
+          <div className="surface p-4">
           <div className="mb-4 flex items-center gap-2">
             <StickyNote className="size-4 text-primary" />
             <h2 className="text-lg font-semibold">Quick notes</h2>
@@ -203,9 +204,41 @@ function Dashboard() {
               ))
             )}
           </div>
+          </div>
+
+          <Panel title="Upcoming events" empty="No upcoming events." items={upcomingEvents.length}>
+            {upcomingEvents.map((e) => (
+              <Row
+                key={e.id}
+                left={e.title}
+                sub={`${titleCase(e.event_type)}${e.class_id ? ` · ${classById.get(e.class_id)?.name ?? ""}` : ""}`}
+                right={formatDate(e.event_date)}
+              />
+            ))}
+          </Panel>
+
+          <Panel
+            title="Recent assessments"
+            empty="No assessments recorded."
+            items={recentAssessments.length}
+          >
+            {recentAssessments.map((x) => (
+              <Row
+                key={x.id}
+                left={x.title}
+                sub={classById.get(x.class_id)?.name ?? ""}
+                right={
+                  a.assessmentAverage(x.id) === null
+                    ? formatDate(x.date)
+                    : `avg ${a.assessmentAverage(x.id)}/${a.scale}`
+                }
+              />
+            ))}
+          </Panel>
         </div>
 
-        <div className="surface p-4">
+        <div className="space-y-6">
+          <div className="surface p-4">
         <h2 className="mb-3 text-lg font-semibold">Classes</h2>
         {activeClasses.length === 0 ? (
           <EmptyState
@@ -240,20 +273,7 @@ function Dashboard() {
             })}
           </div>
         )}
-        </div>
-      </section>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <Panel title="Upcoming events" empty="No upcoming events." items={upcomingEvents.length}>
-          {upcomingEvents.map((e) => (
-            <Row
-              key={e.id}
-              left={e.title}
-              sub={`${titleCase(e.event_type)}${e.class_id ? ` · ${classById.get(e.class_id)?.name ?? ""}` : ""}`}
-              right={formatDate(e.event_date)}
-            />
-          ))}
-        </Panel>
+          </div>
 
         <Panel
           title="Upcoming evaluations"
@@ -266,25 +286,6 @@ function Dashboard() {
               left={x.title}
               sub={classById.get(x.class_id)?.name ?? ""}
               right={formatDate(x.date)}
-            />
-          ))}
-        </Panel>
-
-        <Panel
-          title="Recent assessments"
-          empty="No assessments recorded."
-          items={recentAssessments.length}
-        >
-          {recentAssessments.map((x) => (
-            <Row
-              key={x.id}
-              left={x.title}
-              sub={classById.get(x.class_id)?.name ?? ""}
-              right={
-                a.assessmentAverage(x.id) === null
-                  ? formatDate(x.date)
-                  : `avg ${a.assessmentAverage(x.id)}/${a.scale}`
-              }
             />
           ))}
         </Panel>
@@ -303,6 +304,7 @@ function Dashboard() {
             );
           })}
         </Panel>
+        </div>
       </div>
     </div>
   );
