@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -19,6 +20,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { weightsAreValid } from "@/lib/calc";
 import {
   useEvaluationTypes,
@@ -68,6 +70,7 @@ function SettingsPage() {
   const removePeriod = useRemove("academic_periods");
 
   const s = settings.data;
+  const [settingsSaved, setSettingsSaved] = useState(false);
   const [general, setGeneral] = useState({
     school_name: "",
     school_info: "",
@@ -110,6 +113,7 @@ function SettingsPage() {
         current_period_id: general.current_period_id || null,
       },
     });
+    setSettingsSaved(true);
     toast.success("Settings saved.");
   };
 
@@ -206,7 +210,15 @@ function SettingsPage() {
         description="School identity, academic structure and the rules used to calculate grades."
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <Tabs defaultValue="school" className="w-full">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
+          <TabsTrigger value="school">School info</TabsTrigger>
+          <TabsTrigger value="subjects">Subjects</TabsTrigger>
+          <TabsTrigger value="grading">Grading system</TabsTrigger>
+          <TabsTrigger value="calendar">Academic calendar</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="school" className="mt-6">
         <Card>
           <CardHeader>
             <CardTitle>School &amp; teacher</CardTitle>
@@ -316,11 +328,14 @@ function SettingsPage() {
               />
             </div>
             <Button onClick={saveGeneral} disabled={updateSettings.isPending}>
-              Save settings
+              {settingsSaved ? <Check className="size-4" /> : null}
+              {settingsSaved ? "Settings saved" : "Save settings"}
             </Button>
           </CardContent>
         </Card>
+        </TabsContent>
 
+        <TabsContent value="subjects" className="mt-6">
         <Card>
           <CardHeader>
             <CardTitle>Subjects</CardTitle>
@@ -377,7 +392,9 @@ function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+        </TabsContent>
 
+        <TabsContent value="grading" className="mt-6">
         <Card>
           <CardHeader>
             <CardTitle>Grading weights</CardTitle>
@@ -411,13 +428,26 @@ function SettingsPage() {
               </div>
             ))}
             <div className="flex items-center justify-between">
-              <Badge variant={weightTotal === 100 ? "secondary" : "destructive"}>
-                Total {weightTotal}%
-              </Badge>
+              <div className="flex items-center gap-2">
+                {weightTotal === 100 ? (
+                  <Check className="size-4 text-success" />
+                ) : (
+                  <TriangleAlert className="size-4 text-warning-foreground" />
+                )}
+                <Badge variant={weightTotal === 100 ? "secondary" : "destructive"}>
+                  Total {weightTotal}%
+                </Badge>
+              </div>
               <Button onClick={saveWeights} disabled={upsertWeights.isPending}>
                 Save weights
               </Button>
             </div>
+            <Progress value={Math.min(weightTotal, 100)} aria-label={`Grading weights total ${weightTotal}%`} />
+            {weightTotal !== 100 ? (
+              <p className="text-sm text-warning-foreground">
+                Weights must equal 100% before they can be saved.
+              </p>
+            ) : null}
             <div className="flex gap-2 border-t border-border pt-4">
               <Input
                 placeholder="New evaluation type"
@@ -430,7 +460,10 @@ function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+        </TabsContent>
 
+        <TabsContent value="calendar" className="mt-6">
+        <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Academic years</CardTitle>
@@ -552,7 +585,9 @@ function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+        </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
