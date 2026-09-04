@@ -29,18 +29,25 @@ function Dashboard() {
   const events = useEvents();
   const today = new Date().toISOString().slice(0, 10);
 
-  const currentPeriod = a.periods.find((p) => p.is_current) ?? a.periods[0];
+  const currentPeriod =
+    a.periods.find((p) => p.id === a.settings?.current_period_id) ??
+    a.periods.find((p) => p.is_current) ??
+    a.periods[0];
   const activeClasses = a.classes.filter((c) => c.is_active);
   const activeStudents = a.students.filter((s) => s.status === "active");
   const upcomingEvents = (events.data ?? []).filter((e) => e.event_date >= today).slice(0, 6);
   const upcomingEvaluations = a.assessments
-    .filter((x) => x.date >= today)
+    .filter((x) => x.date >= today && x.period_id === currentPeriod?.id)
     .sort((x, y) => x.date.localeCompare(y.date))
     .slice(0, 5);
   const recentAssessments = [...a.assessments]
-    .filter((x) => x.date <= today)
+    .filter((x) => x.date <= today && x.period_id === currentPeriod?.id)
     .slice(0, 5);
   const recentGrades = [...a.grades]
+    .filter((grade) => {
+      const assessment = a.assessments.find((item) => item.id === grade.assessment_id);
+      return assessment?.period_id === currentPeriod?.id;
+    })
     .sort((x, y) => (y.updated_at ?? "").localeCompare(x.updated_at ?? ""))
     .slice(0, 6);
 
@@ -71,7 +78,11 @@ function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={GraduationCap} label="Classes" value={activeClasses.length} />
         <Stat icon={Users} label="Active students" value={activeStudents.length} />
-        <Stat icon={ClipboardList} label="Assessments" value={a.assessments.length} />
+        <Stat
+          icon={ClipboardList}
+          label={`${currentPeriod?.name ?? "Period"} assessments`}
+          value={a.assessments.filter((x) => x.period_id === currentPeriod?.id).length}
+        />
         <Stat icon={CalendarDays} label="Upcoming events" value={upcomingEvents.length} />
       </div>
 
@@ -177,15 +188,7 @@ function Dashboard() {
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Users;
-  label: string;
-  value: number;
-}) {
+function Stat({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: number }) {
   return (
     <div className="surface flex items-center gap-4 p-4">
       <div className="grid size-11 place-items-center rounded-md bg-secondary text-secondary-foreground">
