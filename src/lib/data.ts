@@ -15,6 +15,7 @@ import type {
   GradeWeight,
   Klass,
   Lesson,
+  QuickNote,
   Student,
   Subject,
   Teacher,
@@ -39,7 +40,8 @@ type TableName =
   | "calendar_events"
   | "grade_weights"
   | "final_grade_overrides"
-  | "app_settings";
+  | "app_settings"
+  | "quick_notes";
 
 async function selectAll<R>(table: TableName, order?: { column: string; ascending?: boolean }[]) {
   let q = supabase.from(table).select("*");
@@ -90,6 +92,8 @@ export const useAttendance = () =>
   useQuery(list<Attendance>("attendance", [{ column: "session_date", ascending: false }]));
 export const useEvents = () =>
   useQuery(list<CalendarEvent>("calendar_events", [{ column: "event_date" }]));
+export const useQuickNotes = () =>
+  useQuery(list<QuickNote>("quick_notes", [{ column: "created_at", ascending: false }]));
 export const useGradeWeights = () => useQuery(list<GradeWeight>("grade_weights"));
 export const useOverrides = () => useQuery(list<FinalGradeOverride>("final_grade_overrides"));
 
