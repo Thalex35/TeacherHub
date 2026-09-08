@@ -56,12 +56,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background">
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar text-sidebar-foreground transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[12px_0_40px_oklch(0.12_0.03_250_/_0.08)] transition-transform lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-4">
-          <div className="grid size-9 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+        <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
+          <div className="grid size-10 place-items-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-black/15">
             <GraduationCap className="size-5" />
           </div>
           <div className="min-w-0">
@@ -74,12 +74,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-3">
           <div className="space-y-0.5">
-            {NAV.map((item) => (
+            {NAV.map((item, index) => (
               <Link
                 key={item.to}
                 to={item.to}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                style={{ animationDelay: `${index * 35}ms` }}
+                className="page-enter flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/72 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 activeProps={{
                   className:
                     "bg-sidebar-accent text-sidebar-accent-foreground font-medium hover:bg-sidebar-accent",
@@ -95,12 +96,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             <p className="px-3 text-[10px] font-medium uppercase tracking-[0.18em] text-sidebar-foreground/50">
               Management
             </p>
-            {MANAGEMENT_NAV.map((item) => (
+            {MANAGEMENT_NAV.map((item, index) => (
               <Link
                 key={item.to}
                 to={item.to}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                style={{ animationDelay: `${(index + NAV.length) * 35}ms` }}
+                className="page-enter flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/72 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 activeProps={{
                   className:
                     "bg-sidebar-accent text-sidebar-accent-foreground font-medium hover:bg-sidebar-accent",
@@ -118,7 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/72 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 activeProps={{
                   className:
                     "bg-sidebar-accent text-sidebar-accent-foreground font-medium hover:bg-sidebar-accent",
@@ -159,8 +161,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
           <span className="font-display font-semibold">TeacherHub</span>
         </header>
-        <main className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mb-4 flex justify-end">
+        <main className="page-enter mx-auto w-full max-w-[1500px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mb-5 flex justify-end">
             <EventNotifications />
           </div>
           {children}
