@@ -63,8 +63,18 @@ export const useYears = () =>
   useQuery(list<AcademicYear>("academic_years", [{ column: "start_date", ascending: false }]));
 export const usePeriods = () =>
   useQuery(list<AcademicPeriod>("academic_periods", [{ column: "sort_order" }]));
-export const useClasses = () =>
-  useQuery(list<Klass>("classes", [{ column: "sort_order" }, { column: "name" }]));
+export const useClasses = (includeInactive = false) =>
+  useQuery({
+    ...list<Klass>("classes", [{ column: "sort_order" }, { column: "name" }]),
+    queryKey: ["classes", includeInactive ? "all" : "active"],
+    queryFn: async () => {
+      const classes = await selectAll<Klass>("classes", [
+        { column: "sort_order" },
+        { column: "name" },
+      ]);
+      return includeInactive ? classes : classes.filter((klass) => klass.is_active);
+    },
+  });
 export const useStudents = () =>
   useQuery(list<Student>("students", [{ column: "last_name" }, { column: "first_name" }]));
 export const useUnits = () => useQuery(list<Unit>("units", [{ column: "position" }]));

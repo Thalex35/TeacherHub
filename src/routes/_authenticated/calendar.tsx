@@ -77,7 +77,10 @@ function CalendarPage() {
     event_type: "class",
   });
 
-  const all = events.data ?? [];
+  const activeClassIds = new Set((classes.data ?? []).map((klass) => klass.id));
+  const all = (events.data ?? []).filter(
+    (event) => event.class_id === null || activeClassIds.has(event.class_id),
+  );
 
   useEffect(() => {
     if (date) setCursor(new Date(`${date}T00:00:00`));
@@ -140,10 +143,18 @@ function CalendarPage() {
   };
 
   const save = async () => {
-    if (!form.title.trim()) { toast.error("A title is required."); return; }
-    if (!form.event_date) { toast.error("A date is required."); return; }
-    if (form.start_time && form.end_time && form.end_time <= form.start_time)
-      { toast.error("End time must be after the start time."); return; }
+    if (!form.title.trim()) {
+      toast.error("A title is required.");
+      return;
+    }
+    if (!form.event_date) {
+      toast.error("A date is required.");
+      return;
+    }
+    if (form.start_time && form.end_time && form.end_time <= form.start_time) {
+      toast.error("End time must be after the start time.");
+      return;
+    }
     const klass = classes.data?.find((c) => c.id === form.class_id);
     const values = {
       title: form.title.trim(),

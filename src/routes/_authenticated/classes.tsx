@@ -24,8 +24,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useInsert, useRemove, useSubjects, useUpdate, useYears } from "@/lib/data";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  useClasses,
+  useInsert,
+  useRemove,
+  useStudents,
+  useSubjects,
+  useUpdate,
+  useYears,
+} from "@/lib/data";
 import { useAcademics } from "@/lib/useAcademics";
 import type { Klass } from "@/lib/types";
 
@@ -44,6 +59,8 @@ export const Route = createFileRoute("/_authenticated/classes")({
 function ClassesPage() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const a = useAcademics();
+  const allClasses = useClasses(true);
+  const allStudents = useStudents();
   const subjects = useSubjects();
   const years = useYears();
   const insert = useInsert("classes");
@@ -87,9 +104,14 @@ function ClassesPage() {
   };
 
   const save = async () => {
-    if (!form.name.trim()) { toast.error("Class name is required."); return; }
-    if (!form.subject_id || !form.academic_year_id)
-      { toast.error("Subject and academic year are required."); return; }
+    if (!form.name.trim()) {
+      toast.error("Class name is required.");
+      return;
+    }
+    if (!form.subject_id || !form.academic_year_id) {
+      toast.error("Subject and academic year are required.");
+      return;
+    }
     const values = {
       name: form.name.trim(),
       section: form.section.trim() || null,
@@ -125,7 +147,7 @@ function ClassesPage() {
         }
       />
 
-      {a.classes.length === 0 ? (
+      {allClasses.data?.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
           title="No classes yet"
@@ -147,11 +169,8 @@ function ClassesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {a.classes.map((c) => (
-                <TableRow
-                  key={c.id}
-                  className="cursor-pointer"
-                >
+              {(allClasses.data ?? []).map((c) => (
+                <TableRow key={c.id} className="cursor-pointer">
                   <TableCell className="font-medium">
                     <Link
                       to="/classes/$classId"
@@ -164,9 +183,15 @@ function ClassesPage() {
                     </Link>
                   </TableCell>
                   <TableCell>{subjects.data?.find((s) => s.id === c.subject_id)?.name}</TableCell>
-                  <TableCell>{years.data?.find((y) => y.id === c.academic_year_id)?.name}</TableCell>
+                  <TableCell>
+                    {years.data?.find((y) => y.id === c.academic_year_id)?.name}
+                  </TableCell>
                   <TableCell className="numeric text-right">
-                    {a.students.filter((s) => s.class_id === c.id && s.status === "active").length}
+                    {
+                      (allStudents.data ?? []).filter(
+                        (s) => s.class_id === c.id && s.status === "active",
+                      ).length
+                    }
                   </TableCell>
                   <TableCell className="numeric text-right">
                     {a.classAverage(c.id) === null ? "—" : `${a.classAverage(c.id)}/${a.scale}`}
