@@ -39,7 +39,18 @@ type ImportSummary = StudentImportResult & {
 };
 
 function classMatch(value: string, className: string) {
-  return value.trim().toLocaleLowerCase() === className.trim().toLocaleLowerCase();
+  const normalizedValue = value
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  const normalizedClass = className
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (normalizedValue === normalizedClass) return true;
+
+  const gradeAlias = /^(7|8|9)(?:th|st|nd|rd)?grade$/.exec(normalizedValue);
+  return Boolean(gradeAlias && normalizedClass === `${gradeAlias[1]}e`);
 }
 
 function readableFileError(cause: unknown) {
