@@ -10,9 +10,9 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-
 
 function NotFoundComponent() {
   return (
@@ -131,6 +131,19 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("teacherhub-live-sync")
+      .on("postgres_changes", { event: "*", schema: "public" }, () => {
+        void queryClient.invalidateQueries();
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
@@ -139,4 +152,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-
