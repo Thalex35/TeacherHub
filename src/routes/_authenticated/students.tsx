@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Pencil, Plus, Trash2, Upload, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -17,6 +17,11 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  StudentImportDialog,
+  type StudentImportRow,
+  type StudentImportResult,
+} from "@/components/student-import-dialog";
 import {
   Select,
   SelectContent,
@@ -71,6 +76,7 @@ function StudentsPage() {
   const [classFilter, setClassFilter] = useState(ALL);
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
   const [form, setForm] = useState(emptyForm);
 
@@ -149,15 +155,44 @@ function StudentsPage() {
     toast.success("Student deleted.");
   };
 
+  const importStudents = async (rows: StudentImportRow[]): Promise<StudentImportResult> => {
+    const failed: StudentImportResult["failed"] = [];
+    let imported = 0;
+    for (const row of rows) {
+      try {
+        await insert.mutateAsync({
+          first_name: row.firstName.trim(),
+          last_name: row.lastName.trim(),
+          class_id: row.classId,
+          status: "active",
+          student_code: undefined,
+        });
+        imported += 1;
+      } catch {
+        failed.push({
+          rowNumber: row.rowNumber,
+          error: "Could not save this student. Check the connection and try again.",
+        });
+      }
+    }
+    if (imported) toast.success(`${imported} student${imported === 1 ? "" : "s"} imported.`);
+    return { imported, failed };
+  };
+
   return (
     <div>
       <PageHeader
         title="Students"
         description="Keep the roster simple: name, ID, class and status."
         actions={
-          <Button onClick={openNew} disabled={a.classes.length === 0}>
-            <Plus className="size-4" /> Add student
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="size-4" /> Import students
+            </Button>
+            <Button onClick={openNew} disabled={a.classes.length === 0}>
+              <Plus className="size-4" /> Add student
+            </Button>
+          </div>
         }
       />
 
@@ -357,6 +392,14 @@ function StudentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <StudentImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        classes={a.classes}
+        students={a.students}
+        onImport={importStudents}
+      />
     </div>
   );
 }
