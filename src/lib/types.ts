@@ -19,6 +19,7 @@ export type CalendarEvent = T["calendar_events"]["Row"];
 export type GradeWeight = T["grade_weights"]["Row"];
 export type FinalGradeOverride = T["final_grade_overrides"]["Row"];
 export type AppSettings = T["app_settings"]["Row"];
+export type QuickNote = T["quick_notes"]["Row"];
 
 export const LESSON_STATUSES = ["planned", "in_progress", "completed", "skipped"] as const;
 export const ATTENDANCE_STATUSES = ["present", "absent", "late", "excused"] as const;

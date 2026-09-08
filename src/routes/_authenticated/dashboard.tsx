@@ -10,15 +10,17 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEvents } from "@/lib/data";
+import { useEvents, useInsert, useQuickNotes, useRemove, useUpdate } from "@/lib/data";
 import { formatDate, titleCase } from "@/lib/format";
 import { useAcademics } from "@/lib/useAcademics";
+
+const LEGACY_QUICK_NOTES_KEY = "teacherhub.quick-notes";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -35,60 +37,49 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-type QuickNote = {
-  id: string;
-  text: string;
-  done: boolean;
-};
-
-const QUICK_NOTES_KEY = "teacherhub.quick-notes";
-
 function Dashboard() {
   const a = useAcademics();
   const events = useEvents();
-  const [notes, setNotes] = useState<QuickNote[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const saved = window.localStorage.getItem(QUICK_NOTES_KEY);
-      if (!saved) return [];
-      const parsed = JSON.parse(saved) as QuickNote[];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
+  const notes = useQuickNotes();
+  const insertNote = useInsert("quick_notes");
+  const updateNote = useUpdate("quick_notes");
+  const removeNote = useRemove("quick_notes");
+  const migratedLegacyNotes = useRef(false);
   const [draft, setDraft] = useState("");
   const [assessmentsOpen, setAssessmentsOpen] = useState(true);
   const today = new Date().toISOString().slice(0, 10);
 
-  useEffect(() => {
-    window.localStorage.setItem(QUICK_NOTES_KEY, JSON.stringify(notes));
-  }, [notes]);
-
-  const addNote = () => {
+  const addNote = async () => {
     const value = draft.trim();
     if (!value) return;
-    setNotes((current) => [
-      {
-        id:
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        text: value,
-        done: false,
-      },
-      ...current,
-    ]);
+    await insertNote.mutateAsync({ text: value, is_done: false });
     setDraft("");
   };
 
-  const toggleNote = (id: string) =>
-    setNotes((current) =>
-      current.map((note) => (note.id === id ? { ...note, done: !note.done } : note)),
-    );
+  const toggleNote = (id: string, done: boolean) =>
+    updateNote.mutate({ id, values: { is_done: !done } });
 
-  const removeNote = (id: string) =>
-    setNotes((current) => current.filter((note) => note.id !== id));
+  const deleteNote = (id: string) => removeNote.mutate(id);
+
+  useEffect(() => {
+    if (migratedLegacyNotes.current || notes.isLoading || (notes.data ?? []).length > 0) return;
+    migratedLegacyNotes.current = true;
+    try {
+      const saved = window.localStorage.getItem(LEGACY_QUICK_NOTES_KEY);
+      if (!saved) return;
+      const legacyNotes = JSON.parse(saved) as { text?: string; done?: boolean }[];
+      if (!Array.isArray(legacyNotes)) return;
+      void Promise.all(
+        legacyNotes
+          .filter((note) => typeof note.text === "string" && note.text.trim())
+          .map((note) =>
+            insertNote.mutateAsync({ text: note.text!.trim(), is_done: Boolean(note.done) }),
+          ),
+      ).then(() => window.localStorage.removeItem(LEGACY_QUICK_NOTES_KEY));
+    } catch {
+      window.localStorage.removeItem(LEGACY_QUICK_NOTES_KEY);
+    }
+  }, [insertNote, notes.data, notes.isLoading]);
 
   const currentPeriod =
     a.periods.find((p) => p.id === a.settings?.current_period_id) ??
@@ -231,50 +222,57 @@ function Dashboard() {
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") addNote();
+                  if (event.key === "Enter") void addNote();
                 }}
                 placeholder="Add a classroom reminder"
                 className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-0 placeholder:text-muted-foreground focus:border-primary"
               />
-              <Button type="button" onClick={addNote} size="sm" className="shrink-0 gap-2">
+              <Button
+                type="button"
+                onClick={() => void addNote()}
+                size="sm"
+                className="shrink-0 gap-2"
+              >
                 <Plus className="size-4" /> Add
               </Button>
             </div>
             <div className="mt-4 space-y-2">
-              {notes.length === 0 ? (
+              {(notes.data ?? []).length === 0 ? (
                 <div className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
                   No reminders yet. Add one to keep track of follow-ups.
                 </div>
               ) : (
-                notes.map((note) => (
+                (notes.data ?? []).map((note) => (
                   <div
                     key={note.id}
                     className="flex items-start gap-3 rounded-md border border-border bg-background p-3"
                   >
                     <button
                       type="button"
-                      onClick={() => toggleNote(note.id)}
+                      onClick={() => toggleNote(note.id, note.is_done)}
                       className={
                         "mt-0.5 grid size-5 place-items-center rounded-full border " +
-                        (note.done
+                        (note.is_done
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-muted-foreground/40 bg-transparent text-transparent")
                       }
-                      aria-label={note.done ? "Mark note as incomplete" : "Mark note as complete"}
+                      aria-label={
+                        note.is_done ? "Mark note as incomplete" : "Mark note as complete"
+                      }
                     >
                       <Check className="size-3" />
                     </button>
                     <p
                       className={
                         "flex-1 text-sm " +
-                        (note.done ? "text-muted-foreground line-through" : "text-foreground")
+                        (note.is_done ? "text-muted-foreground line-through" : "text-foreground")
                       }
                     >
                       {note.text}
                     </p>
                     <button
                       type="button"
-                      onClick={() => removeNote(note.id)}
+                      onClick={() => deleteNote(note.id)}
                       className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       aria-label="Delete note"
                     >
