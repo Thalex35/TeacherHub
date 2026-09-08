@@ -87,7 +87,8 @@ function Dashboard() {
       current.map((note) => (note.id === id ? { ...note, done: !note.done } : note)),
     );
 
-  const removeNote = (id: string) => setNotes((current) => current.filter((note) => note.id !== id));
+  const removeNote = (id: string) =>
+    setNotes((current) => current.filter((note) => note.id !== id));
 
   const currentPeriod =
     a.periods.find((p) => p.id === a.settings?.current_period_id) ??
@@ -108,7 +109,11 @@ function Dashboard() {
       return left.average - right.average;
     });
   const activeStudents = a.students.filter((s) => s.status === "active");
-  const upcomingEvents = (events.data ?? []).filter((e) => e.event_date >= today).slice(0, 6);
+  const activeClassIds = new Set(a.classes.map((klass) => klass.id));
+  const upcomingEvents = (events.data ?? [])
+    .filter((event) => event.class_id === null || activeClassIds.has(event.class_id))
+    .filter((e) => e.event_date >= today)
+    .slice(0, 6);
   const upcomingEvaluations = a.assessments
     .filter((x) => x.date >= today && x.period_id === currentPeriod?.id)
     .sort((x, y) => x.date.localeCompare(y.date))
@@ -188,7 +193,9 @@ function Dashboard() {
               <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Recent assessments
               </span>
-              <ChevronDown className={`size-4 transition-transform ${assessmentsOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`size-4 transition-transform ${assessmentsOpen ? "rotate-180" : ""}`}
+              />
             </button>
             {assessmentsOpen ? (
               recentAssessments.length === 0 ? (
@@ -240,7 +247,10 @@ function Dashboard() {
                 </div>
               ) : (
                 notes.map((note) => (
-                  <div key={note.id} className="flex items-start gap-3 rounded-md border border-border bg-background p-3">
+                  <div
+                    key={note.id}
+                    className="flex items-start gap-3 rounded-md border border-border bg-background p-3"
+                  >
                     <button
                       type="button"
                       onClick={() => toggleNote(note.id)}
@@ -254,7 +264,12 @@ function Dashboard() {
                     >
                       <Check className="size-3" />
                     </button>
-                    <p className={"flex-1 text-sm " + (note.done ? "text-muted-foreground line-through" : "text-foreground")}>
+                    <p
+                      className={
+                        "flex-1 text-sm " +
+                        (note.done ? "text-muted-foreground line-through" : "text-foreground")
+                      }
+                    >
                       {note.text}
                     </p>
                     <button
@@ -274,75 +289,77 @@ function Dashboard() {
 
         <div className="space-y-6">
           <div className="surface p-4">
-        <h2 className="mb-3 text-lg font-semibold">Classes performance</h2>
-        {activeClasses.length === 0 ? (
-          <EmptyState
-            icon={GraduationCap}
-            title="No classes yet"
-            description="Create your first class to start managing students and curriculum."
-          />
-          ) : (
-            <div className="grid gap-3">
-              {classPerformance.map(({ classItem: c, count, average }) => {
-                const performance = getPerformanceLevel(average, a.scale);
-              return (
-                <Link
-                  key={c.id}
-                  to="/classes/$classId"
-                  params={{ classId: c.id }}
-                  className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/50"
-                >
-                    <div className="flex items-center justify-between gap-2">
-                    <span className="font-display text-base font-semibold">{c.name}</span>
-                      <span className="text-xs text-muted-foreground">{count} students</span>
-                  </div>
-                    <div className="mt-2 flex items-end justify-between gap-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Period average</p>
-                        <p className="numeric text-xl font-semibold">
-                          {average === null ? "—" : `${average}/${a.scale}`}
-                        </p>
+            <h2 className="mb-3 text-lg font-semibold">Classes performance</h2>
+            {activeClasses.length === 0 ? (
+              <EmptyState
+                icon={GraduationCap}
+                title="No classes yet"
+                description="Create your first class to start managing students and curriculum."
+              />
+            ) : (
+              <div className="grid gap-3">
+                {classPerformance.map(({ classItem: c, count, average }) => {
+                  const performance = getPerformanceLevel(average, a.scale);
+                  return (
+                    <Link
+                      key={c.id}
+                      to="/classes/$classId"
+                      params={{ classId: c.id }}
+                      className="rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/50"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-display text-base font-semibold">{c.name}</span>
+                        <span className="text-xs text-muted-foreground">{count} students</span>
                       </div>
-                      <span className={`rounded-md border px-2 py-0.5 text-xs font-semibold ${performance.className}`}>
-                        {performance.label}
-                      </span>
-                    </div>
-                </Link>
+                      <div className="mt-2 flex items-end justify-between gap-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Period average</p>
+                          <p className="numeric text-xl font-semibold">
+                            {average === null ? "—" : `${average}/${a.scale}`}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-md border px-2 py-0.5 text-xs font-semibold ${performance.className}`}
+                        >
+                          {performance.label}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <Panel
+            title="Upcoming evaluations"
+            empty="Nothing scheduled."
+            items={upcomingEvaluations.length}
+          >
+            {upcomingEvaluations.map((x) => (
+              <Row
+                key={x.id}
+                left={x.title}
+                sub={classById.get(x.class_id)?.name ?? ""}
+                right={formatDate(x.date)}
+              />
+            ))}
+          </Panel>
+
+          <Panel title="Recent grades" empty="No grades entered yet." items={recentGrades.length}>
+            {recentGrades.map((g) => {
+              const st = studentById.get(g.student_id);
+              const asmt = assessmentById.get(g.assessment_id);
+              return (
+                <Row
+                  key={g.id}
+                  left={st ? `${st.first_name} ${st.last_name}` : "Student"}
+                  sub={asmt?.title ?? ""}
+                  right={g.score === null ? "—" : `${g.score}/${asmt?.max_grade ?? a.scale}`}
+                />
               );
             })}
-          </div>
-        )}
-          </div>
-
-        <Panel
-          title="Upcoming evaluations"
-          empty="Nothing scheduled."
-          items={upcomingEvaluations.length}
-        >
-          {upcomingEvaluations.map((x) => (
-            <Row
-              key={x.id}
-              left={x.title}
-              sub={classById.get(x.class_id)?.name ?? ""}
-              right={formatDate(x.date)}
-            />
-          ))}
-        </Panel>
-
-        <Panel title="Recent grades" empty="No grades entered yet." items={recentGrades.length}>
-          {recentGrades.map((g) => {
-            const st = studentById.get(g.student_id);
-            const asmt = assessmentById.get(g.assessment_id);
-            return (
-              <Row
-                key={g.id}
-                left={st ? `${st.first_name} ${st.last_name}` : "Student"}
-                sub={asmt?.title ?? ""}
-                right={g.score === null ? "—" : `${g.score}/${asmt?.max_grade ?? a.scale}`}
-              />
-            );
-          })}
-        </Panel>
+          </Panel>
         </div>
       </section>
     </div>
@@ -378,7 +395,9 @@ function Panel({
 }) {
   return (
     <div className={`surface ${prominent ? "p-5" : "p-4"}`}>
-      <h3 className={`mb-3 font-semibold uppercase tracking-wide text-muted-foreground ${prominent ? "text-base" : "text-sm"}`}>
+      <h3
+        className={`mb-3 font-semibold uppercase tracking-wide text-muted-foreground ${prominent ? "text-base" : "text-sm"}`}
+      >
         {title}
       </h3>
       {items === 0 ? (
@@ -390,7 +409,17 @@ function Panel({
   );
 }
 
-function Row({ left, sub, right, prominent = false }: { left: string; sub?: string; right?: string; prominent?: boolean }) {
+function Row({
+  left,
+  sub,
+  right,
+  prominent = false,
+}: {
+  left: string;
+  sub?: string;
+  right?: string;
+  prominent?: boolean;
+}) {
   return (
     <div className="flex items-center justify-between gap-3 py-2.5">
       <div className="min-w-0">

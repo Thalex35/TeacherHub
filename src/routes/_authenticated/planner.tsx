@@ -25,7 +25,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   useClasses,
   useInsert,
@@ -44,7 +51,8 @@ export const Route = createFileRoute("/_authenticated/planner")({
       { title: "Lesson Planner — TeacherHub" },
       {
         name: "description",
-        content: "Plan two-hour sessions with configurable theory, demonstration and practice blocks.",
+        content:
+          "Plan two-hour sessions with configurable theory, demonstration and practice blocks.",
       },
       { property: "og:title", content: "Lesson Planner — TeacherHub" },
       { property: "og:description", content: "Plan and track every teaching session." },
@@ -86,6 +94,7 @@ function PlannerPage() {
   const rows = (lessons.data ?? [])
     .filter(
       (l) =>
+        classes.data?.some((klass) => klass.id === l.class_id) &&
         (classFilter === ALL || l.class_id === classFilter) &&
         (statusFilter === ALL || l.status === statusFilter),
     )
@@ -136,8 +145,14 @@ function PlannerPage() {
     Number(form.review_minutes || 0);
 
   const save = async () => {
-    if (!form.title.trim()) { toast.error("A lesson title is required."); return; }
-    if (!form.class_id) { toast.error("Select a class."); return; }
+    if (!form.title.trim()) {
+      toast.error("A lesson title is required.");
+      return;
+    }
+    if (!form.class_id) {
+      toast.error("Select a class.");
+      return;
+    }
     const values = {
       title: form.title.trim(),
       class_id: form.class_id,
@@ -227,7 +242,8 @@ function PlannerPage() {
                   <TableCell className="font-medium">{l.title}</TableCell>
                   <TableCell>{classes.data?.find((c) => c.id === l.class_id)?.name}</TableCell>
                   <TableCell className="numeric text-sm text-muted-foreground">
-                    {l.theory_minutes}/{l.demo_minutes}/{l.assignment_minutes}/{l.review_minutes} min
+                    {l.theory_minutes}/{l.demo_minutes}/{l.assignment_minutes}/{l.review_minutes}{" "}
+                    min
                   </TableCell>
                   <TableCell>
                     <Select value={l.status} onValueChange={(v) => setStatus(l, v)}>
@@ -283,7 +299,9 @@ function PlannerPage() {
                 <Label>Class</Label>
                 <Select
                   value={form.class_id}
-                  onValueChange={(v) => setForm({ ...form, class_id: v, unit_id: NONE, topic_id: NONE })}
+                  onValueChange={(v) =>
+                    setForm({ ...form, class_id: v, unit_id: NONE, topic_id: NONE })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Class" />

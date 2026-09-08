@@ -27,6 +27,19 @@ export function useAcademics() {
 
   const scale = Number(settings.data?.default_max_grade ?? 10);
   const precision = settings.data?.decimal_precision ?? 2;
+  const activeClassIds = new Set(classes.data?.map((klass) => klass.id) ?? []);
+  const visibleStudents = (students.data ?? []).filter((student) =>
+    activeClassIds.has(student.class_id),
+  );
+  const visibleAssessments = (assessments.data ?? []).filter((assessment) =>
+    activeClassIds.has(assessment.class_id),
+  );
+  const visibleAssessmentIds = new Set(visibleAssessments.map((assessment) => assessment.id));
+  const visibleStudentIds = new Set(visibleStudents.map((student) => student.id));
+  const visibleGrades = (grades.data ?? []).filter(
+    (grade) =>
+      visibleStudentIds.has(grade.student_id) && visibleAssessmentIds.has(grade.assessment_id),
+  );
 
   const loading =
     classes.isLoading ||
@@ -36,26 +49,22 @@ export function useAcademics() {
     types.isLoading;
 
   const derived = useMemo(() => {
-    const allGrades = grades.data ?? [];
-    const allAssessments = assessments.data ?? [];
+    const allGrades = visibleGrades;
+    const allAssessments = visibleAssessments;
     const assessmentById = new Map(allAssessments.map((a) => [a.id, a]));
 
     const studentAverage = (studentId: string, periodId?: string | null) => {
       const scores = allGrades
         .filter((g) => g.student_id === studentId && g.score !== null)
         .map((g) => ({ g, a: assessmentById.get(g.assessment_id) }))
-        .filter(
-          (x) => x.a && (!periodId || x.a.period_id === periodId),
-        )
+        .filter((x) => x.a && (!periodId || x.a.period_id === periodId))
         .map((x) => normalise(Number(x.g.score), Number(x.a!.max_grade), scale));
       const a = avg(scores);
       return a === null ? null : round(a, precision);
     };
 
     const classAverage = (classId: string, periodId?: string | null) => {
-      const ids = new Set(
-        (students.data ?? []).filter((s) => s.class_id === classId).map((s) => s.id),
-      );
+      const ids = new Set(visibleStudents.filter((s) => s.class_id === classId).map((s) => s.id));
       const values = [...ids].map((id) => studentAverage(id, periodId)).filter((v) => v !== null);
       const a = avg(values as number[]);
       return a === null ? null : round(a, precision);
@@ -78,7 +87,9 @@ export function useAcademics() {
         grades: allGrades.filter((g) => g.student_id === studentId && ids.has(g.assessment_id)),
         assessments: periodAssessments,
         types: types.data ?? [],
-        weights: (weights.data ?? []).filter((w) => w.period_id === null || w.period_id === periodId),
+        weights: (weights.data ?? []).filter(
+          (w) => w.period_id === null || w.period_id === periodId,
+        ),
         scale,
         precision,
       });
@@ -93,16 +104,25 @@ export function useAcademics() {
     };
 
     return { studentAverage, classAverage, assessmentAverage, finalGrade };
-  }, [grades.data, assessments.data, students.data, types.data, weights.data, overrides.data, scale, precision]);
+  }, [
+    visibleGrades,
+    visibleAssessments,
+    visibleStudents,
+    types.data,
+    weights.data,
+    overrides.data,
+    scale,
+    precision,
+  ]);
 
   return {
     loading,
     scale,
     precision,
     classes: classes.data ?? [],
-    students: students.data ?? [],
-    assessments: assessments.data ?? [],
-    grades: grades.data ?? [],
+    students: visibleStudents,
+    assessments: visibleAssessments,
+    grades: visibleGrades,
     types: types.data ?? [],
     weights: weights.data ?? [],
     periods: periods.data ?? [],
