@@ -10,6 +10,7 @@ export type Klass = T["classes"]["Row"];
 export type Student = T["students"]["Row"];
 export type Unit = T["units"]["Row"];
 export type Topic = T["topics"]["Row"];
+export type TopicSlide = T["topic_slides"]["Row"];
 export type Lesson = T["lessons"]["Row"];
 export type EvaluationType = T["evaluation_types"]["Row"];
 export type Assessment = T["assessments"]["Row"];

@@ -1,6 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BookOpen, ChevronDown, ChevronUp, FileUp, Plus, Trash2, Pencil } from "lucide-react";
-import { useState } from "react";
+import {
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  FileUp,
+  Pencil,
+  Plus,
+  Presentation,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { FilterBar } from "@/components/filters";
@@ -30,6 +41,7 @@ import {
   CurriculumImportDialog,
   type CurriculumImportSummary,
 } from "@/components/curriculum-import-dialog";
+import { TopicSlideViewer } from "@/components/topic-slide-viewer";
 import type { CurriculumImportRow } from "@/lib/curriculum-import";
 import {
   useClasses,
@@ -37,11 +49,13 @@ import {
   useLessons,
   useRemove,
   useTopics,
+  useTopicSlides,
   useUnits,
+  useUploadTopicSlide,
   useUpdate,
 } from "@/lib/data";
 import { titleCase } from "@/lib/format";
-import type { Lesson, Topic, Unit } from "@/lib/types";
+import type { Lesson, Topic, TopicSlide, Unit } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/curriculum")({
   head: () => ({
@@ -68,6 +82,7 @@ function CurriculumPage() {
   const classes = useClasses();
   const units = useUnits();
   const topics = useTopics();
+  const topicSlides = useTopicSlides();
   const lessons = useLessons();
 
   const insertUnit = useInsert("units");
@@ -79,6 +94,7 @@ function CurriculumPage() {
   const insertLesson = useInsert("lessons");
   const updateLesson = useUpdate("lessons");
   const removeLesson = useRemove("lessons");
+  const uploadTopicSlide = useUploadTopicSlide();
 
   const [classId, setClassId] = useState<string>("");
   const [importOpen, setImportOpen] = useState(false);
@@ -86,6 +102,8 @@ function CurriculumPage() {
   const [editing, setEditing] = useState<Editing>(null);
   const [collapsedUnits, setCollapsedUnits] = useState<Record<string, boolean>>({});
   const [collapsedTopics, setCollapsedTopics] = useState<Record<string, boolean>>({});
+  const slideInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [viewer, setViewer] = useState<{ slide: TopicSlide; topicTitle: string } | null>(null);
   const [form, setForm] = useState<{
     title?: string;
     description?: string;
@@ -190,6 +208,25 @@ function CurriculumPage() {
       id: lesson.id,
       values: { status: lesson.status === "completed" ? "planned" : "completed" },
     });
+  };
+
+  const attachSlide = async (topicId: string, file: File | undefined) => {
+    if (!file) return;
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ];
+    if (!allowedTypes.includes(file.type) && !/\.(pdf|pptx?|ppsx?)$/i.test(file.name)) {
+      toast.error("Choose a PDF or PowerPoint file.");
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("Slides must be smaller than 100 MB.");
+      return;
+    }
+    await uploadTopicSlide.mutateAsync({ topicId, file });
+    toast.success("Slides attached to this topic.");
   };
 
   const importCurriculum = async (
@@ -435,6 +472,7 @@ function CurriculumPage() {
                 {!unitCollapsed ? (
                   <div className="space-y-3 p-4">
                     {unitTopics.map((t) => {
+                      const slide = (topicSlides.data ?? []).find((item) => item.topic_id === t.id);
                       const topicLessons = classLessons
                         .filter((l) => l.topic_id === t.id)
                         .sort((x, y) => x.position - y.position);
@@ -463,6 +501,36 @@ function CurriculumPage() {
                               </span>
                             </button>
                             <div className="flex gap-1">
+                              <input
+                                ref={(element) => {
+                                  slideInputRefs.current[t.id] = element;
+                                }}
+                                type="file"
+                                accept=".pdf,.ppt,.pptx,.ppsx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                                className="hidden"
+                                onChange={(event) => {
+                                  void attachSlide(t.id, event.target.files?.[0]);
+                                  event.target.value = "";
+                                }}
+                              />
+                              {slide ? (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => setViewer({ slide, topicTitle: t.title })}
+                                >
+                                  <Eye className="size-4" /> Present
+                                </Button>
+                              ) : null}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={uploadTopicSlide.isPending}
+                                onClick={() => slideInputRefs.current[t.id]?.click()}
+                              >
+                                {slide ? <Upload className="size-4" /> : <Presentation className="size-4" />}
+                                {slide ? "Replace" : "Add slides"}
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -695,6 +763,12 @@ function CurriculumPage() {
         )}
         lessons={classLessons}
         onImport={importCurriculum}
+      />
+      <TopicSlideViewer
+        open={Boolean(viewer)}
+        onOpenChange={(open) => !open && setViewer(null)}
+        slide={viewer?.slide ?? null}
+        topicTitle={viewer?.topicTitle ?? "Topic slides"}
       />
     </div>
   );

@@ -35,6 +35,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      topic_slides: {
+        Row: {
+          created_at: string;
+          file_name: string;
+          file_size: number;
+          id: string;
+          mime_type: string;
+          owner_id: string;
+          storage_path: string;
+          topic_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          file_name: string;
+          file_size: number;
+          id?: string;
+          mime_type: string;
+          owner_id?: string;
+          storage_path: string;
+          topic_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          file_name?: string;
+          file_size?: number;
+          id?: string;
+          mime_type?: string;
+          owner_id?: string;
+          storage_path?: string;
+          topic_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "topic_slides_topic_id_fkey";
+            columns: ["topic_id"];
+            isOneToOne: true;
+            referencedRelation: "topics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       academic_periods: {
         Row: {
           academic_year_id: string;

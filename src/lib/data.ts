@@ -20,6 +20,7 @@ import type {
   Subject,
   Teacher,
   Topic,
+  TopicSlide,
   Unit,
 } from "./types";
 
@@ -32,6 +33,7 @@ type TableName =
   | "students"
   | "units"
   | "topics"
+  | "topic_slides"
   | "lessons"
   | "evaluation_types"
   | "assessments"
@@ -81,6 +83,7 @@ export const useStudents = () =>
   useQuery(list<Student>("students", [{ column: "last_name" }, { column: "first_name" }]));
 export const useUnits = () => useQuery(list<Unit>("units", [{ column: "position" }]));
 export const useTopics = () => useQuery(list<Topic>("topics", [{ column: "position" }]));
+export const useTopicSlides = () => useQuery(list<TopicSlide>("topic_slides"));
 export const useLessons = () =>
   useQuery(list<Lesson>("lessons", [{ column: "position" }, { column: "planned_date" }]));
 export const useEvaluationTypes = () =>
@@ -169,6 +172,56 @@ export function useRemove(table: TableName) {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: [table] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUploadTopicSlide() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ topicId, file }: { topicId: string; file: File }) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("You must be signed in to upload a slide.");
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const path = `${user.id}/${topicId}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("topic-slides")
+        .upload(path, file, { contentType: file.type || "application/octet-stream" });
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data: previous } = await supabase
+        .from("topic_slides")
+        .select("storage_path")
+        .eq("topic_id", topicId)
+        .maybeSingle();
+      const { data, error } = await supabase
+        .from("topic_slides")
+        .upsert(
+          {
+            topic_id: topicId,
+            owner_id: user.id,
+            file_name: file.name,
+            file_size: file.size,
+            mime_type: file.type || "application/octet-stream",
+            storage_path: path,
+          } as never,
+          { onConflict: "topic_id" },
+        )
+        .select()
+        .single();
+      if (error) {
+        await supabase.storage.from("topic-slides").remove([path]);
+        throw new Error(error.message);
+      }
+      if (previous?.storage_path) {
+        await supabase.storage.from("topic-slides").remove([previous.storage_path]);
+      }
+      return data as TopicSlide;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["topic_slides"] }),
     onError: (e: Error) => toast.error(e.message),
   });
 }
