@@ -1,8 +1,19 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { Activity, Check, Clock3, ShieldCheck, UserRound, Users, X } from "lucide-react";
+import {
+  Activity,
+  Check,
+  Clock3,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  UserRound,
+  Users,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getAccountProfile,
@@ -30,6 +41,8 @@ function AdminPage() {
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<AccountProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | AccountProfile["account_status"]>("all");
 
   const loadProfiles = async () => {
     setLoading(true);
@@ -50,6 +63,14 @@ function AdminPage() {
   };
 
   const pending = profiles.filter((profile) => profile.account_status === "pending").length;
+  const filteredProfiles = profiles.filter((profile) => {
+    const query = search.trim().toLowerCase();
+    const matchesSearch =
+      !query ||
+      profile.email.toLowerCase().includes(query) ||
+      (profile.full_name ?? "").toLowerCase().includes(query);
+    return matchesSearch && (statusFilter === "all" || profile.account_status === statusFilter);
+  });
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-8">
@@ -148,6 +169,66 @@ function AdminPage() {
             </div>
           </div>
         </div>
+
+        <section className="surface mt-8 overflow-hidden">
+          <div className="border-b border-border px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Users</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Search accounts and manage access status.
+                </p>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {filteredProfiles.length} of {profiles.length}
+              </span>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search by name or email"
+                  className="pl-9"
+                  aria-label="Search users"
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as "all" | AccountProfile["account_status"])
+                }
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary"
+                aria-label="Filter users by status"
+              >
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+          </div>
+          {loading ? (
+            <p className="p-5 text-sm text-muted-foreground">Loading users...</p>
+          ) : filteredProfiles.length === 0 ? (
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              No users match the current filters.
+            </p>
+          ) : (
+            <div className="divide-y divide-border">
+              {filteredProfiles.map((profile) => (
+                <UserRow
+                  key={profile.id}
+                  profile={profile}
+                  isCurrentUser={profile.id === user.id}
+                  onStatusChange={setStatus}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
@@ -181,7 +262,74 @@ function AccountRow({
   );
 }
 
-function StatusPill({ status }: { status: AccountProfile["account_status"] }) {
+function UserRow({
+  profile,
+  isCurrentUser,
+  onStatusChange,
+}: {
+  profile: AccountProfile;
+  isCurrentUser: boolean;
+  onStatusChange: (profile: AccountProfile, status: AccountProfile["account_status"]) => void;
+}) {
+  const nextStatus = {
+    pending: "approved",
+    approved: "suspended",
+    rejected: "approved",
+    suspended: "approved",
+  } as const;
+  const actionLabel = {
+    pending: "Approve",
+    approved: "Suspend",
+    rejected: "Approve",
+    suspended: "Reactivate",
+  } as const;
+  const actionIcon = profile.account_status === "suspended" ? RotateCcw : Check;
+  const ActionIcon = actionIcon;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate font-medium">{profile.full_name || profile.email}</p>
+          {profile.role === "admin" ? <StatusPill status="approved" label="admin" /> : null}
+          {isCurrentUser ? <span className="text-xs text-muted-foreground">You</span> : null}
+        </div>
+        <p className="truncate text-sm text-muted-foreground">{profile.email}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <StatusPill status={profile.account_status} />
+        {!isCurrentUser ? (
+          <>
+            <Button
+              size="sm"
+              variant={profile.account_status === "approved" ? "outline" : "default"}
+              onClick={() => onStatusChange(profile, nextStatus[profile.account_status])}
+            >
+              <ActionIcon className="mr-1 size-4" /> {actionLabel[profile.account_status]}
+            </Button>
+            {profile.account_status === "pending" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onStatusChange(profile, "rejected")}
+              >
+                <X className="mr-1 size-4" /> Reject
+              </Button>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function StatusPill({
+  status,
+  label,
+}: {
+  status: AccountProfile["account_status"];
+  label?: string;
+}) {
   const styles = {
     pending: "bg-amber-100 text-amber-800",
     approved: "bg-emerald-100 text-emerald-800",
@@ -190,7 +338,7 @@ function StatusPill({ status }: { status: AccountProfile["account_status"] }) {
   } as const;
   return (
     <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${styles[status]}`}>
-      {status}
+      {label ?? status}
     </span>
   );
 }
