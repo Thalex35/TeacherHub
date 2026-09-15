@@ -26,6 +26,8 @@ function AuthPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -39,8 +41,28 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     void navigate({ to: "/dashboard" });
+  };
+
+  const signUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin },
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (data.session) void navigate({ to: "/pending" });
+    else toast.success("Account created. Check your inbox to confirm your email.");
   };
 
   // Single-user mode: keep original sign-up flow commented out for later re-enablement.
@@ -83,10 +105,19 @@ function AuthPage() {
 
         <div className="surface p-6">
           <div className="mb-4 text-center text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Single-user sign in
+            {isRegistering ? "Request access" : "Sign in"}
           </div>
 
-          <form onSubmit={signIn} className="space-y-4">
+          <form onSubmit={isRegistering ? signUp : signIn} className="space-y-4">
+            {isRegistering ? (
+              <Field
+                id="full-name"
+                label="Full name"
+                value={fullName}
+                onChange={setFullName}
+                type="text"
+              />
+            ) : null}
             <Field id="email" label="Email" value={email} onChange={setEmail} type="email" />
             <Field
               id="password"
@@ -96,8 +127,17 @@ function AuthPage() {
               type="password"
             />
             <Button type="submit" className="w-full" disabled={loading}>
-              Sign in
+              {isRegistering ? "Request access" : "Sign in"}
             </Button>
+            <button
+              type="button"
+              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => setIsRegistering((value) => !value)}
+            >
+              {isRegistering
+                ? "Already have an account? Sign in"
+                : "Need an account? Request access"}
+            </button>
           </form>
 
           {/* Alternative sign-in methods are intentionally disabled for this single-user setup.
