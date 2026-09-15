@@ -21,6 +21,7 @@ import {
   updateAccountStatus,
   type AccountProfile,
 } from "@/lib/account";
+import { listAccountUsage, updateAccountLimits, type AccountUsage } from "@/lib/account";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -43,11 +44,13 @@ function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AccountProfile["account_status"]>("all");
+  const [usage, setUsage] = useState<AccountUsage[]>([]);
 
   const loadProfiles = async () => {
     setLoading(true);
     try {
       setProfiles(await listAccountProfiles());
+      setUsage(await listAccountUsage());
     } finally {
       setLoading(false);
     }
@@ -71,6 +74,7 @@ function AdminPage() {
       (profile.full_name ?? "").toLowerCase().includes(query);
     return matchesSearch && (statusFilter === "all" || profile.account_status === statusFilter);
   });
+  const usageByUser = new Map(usage.map((item) => [item.user_id, item]));
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-8">
@@ -223,7 +227,12 @@ function AdminPage() {
                   key={profile.id}
                   profile={profile}
                   isCurrentUser={profile.id === user.id}
+                  usage={usageByUser.get(profile.id)}
                   onStatusChange={setStatus}
+                  onLimitsChange={async (limits) => {
+                    await updateAccountLimits(profile.id, limits);
+                    await loadProfiles();
+                  }}
                 />
               ))}
             </div>
@@ -265,11 +274,17 @@ function AccountRow({
 function UserRow({
   profile,
   isCurrentUser,
+  usage,
   onStatusChange,
+  onLimitsChange,
 }: {
   profile: AccountProfile;
   isCurrentUser: boolean;
+  usage?: AccountUsage;
   onStatusChange: (profile: AccountProfile, status: AccountProfile["account_status"]) => void;
+  onLimitsChange: (
+    limits: Pick<AccountProfile, "max_students" | "max_classes" | "max_storage_bytes">,
+  ) => Promise<void>;
 }) {
   const nextStatus = {
     pending: "approved",
@@ -285,6 +300,13 @@ function UserRow({
   } as const;
   const actionIcon = profile.account_status === "suspended" ? RotateCcw : Check;
   const ActionIcon = actionIcon;
+  const [editingLimits, setEditingLimits] = useState(false);
+  const [limits, setLimits] = useState({
+    max_students: profile.max_students,
+    max_classes: profile.max_classes,
+    max_storage_bytes: Math.round(profile.max_storage_bytes / 1073741824),
+  });
+  const storageUsedGb = (usage?.storage_bytes ?? 0) / 1073741824;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
@@ -295,6 +317,11 @@ function UserRow({
           {isCurrentUser ? <span className="text-xs text-muted-foreground">You</span> : null}
         </div>
         <p className="truncate text-sm text-muted-foreground">{profile.email}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {usage?.students_count ?? 0}/{profile.max_students} students · {usage?.classes_count ?? 0}
+          /{profile.max_classes} classes · {storageUsedGb.toFixed(2)}/
+          {Math.round(profile.max_storage_bytes / 1073741824)} GB
+        </p>
       </div>
       <div className="flex items-center gap-2">
         <StatusPill status={profile.account_status} />
@@ -319,6 +346,48 @@ function UserRow({
           </>
         ) : null}
       </div>
+      {editingLimits ? (
+        <div className="w-full rounded-md bg-muted/50 p-3">
+          <div className="grid gap-2 sm:grid-cols-3">
+            {(["max_students", "max_classes", "max_storage_bytes"] as const).map((key) => (
+              <label key={key} className="text-xs text-muted-foreground">
+                {key === "max_storage_bytes"
+                  ? "Storage (GB)"
+                  : key === "max_students"
+                    ? "Students"
+                    : "Classes"}
+                <Input
+                  type="number"
+                  min="1"
+                  value={limits[key]}
+                  onChange={(event) => setLimits({ ...limits, [key]: Number(event.target.value) })}
+                  className="mt-1"
+                />
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 flex justify-end gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setEditingLimits(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() =>
+                void onLimitsChange({
+                  ...limits,
+                  max_storage_bytes: limits.max_storage_bytes * 1073741824,
+                }).then(() => setEditingLimits(false))
+              }
+            >
+              Save limits
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button size="sm" variant="ghost" onClick={() => setEditingLimits(true)}>
+          Edit limits
+        </Button>
+      )}
     </div>
   );
 }

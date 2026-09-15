@@ -9,6 +9,16 @@ export type AccountProfile = {
   created_at: string;
   approved_at: string | null;
   approved_by: string | null;
+  max_students: number;
+  max_classes: number;
+  max_storage_bytes: number;
+};
+
+export type AccountUsage = {
+  user_id: string;
+  students_count: number;
+  classes_count: number;
+  storage_bytes: number;
 };
 
 const profiles = () => supabase.from("profiles" as never);
@@ -36,6 +46,22 @@ export async function updateAccountStatus(
       approved_at: accountStatus === "approved" ? new Date().toISOString() : null,
       approved_by: accountStatus === "approved" ? approvedBy : null,
     } as never)
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function listAccountUsage() {
+  const { data, error } = await supabase.rpc("admin_account_usage" as never);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as AccountUsage[];
+}
+
+export async function updateAccountLimits(
+  id: string,
+  limits: Pick<AccountProfile, "max_students" | "max_classes" | "max_storage_bytes">,
+) {
+  const { error } = await profiles()
+    .update(limits as never)
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
