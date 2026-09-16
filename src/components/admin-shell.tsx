@@ -1,14 +1,16 @@
+import { recordActivity } from "@/lib/account";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   ExternalLink,
+  Lightbulb,
   LayoutDashboard,
   LogOut,
   ShieldCheck,
   Settings2,
   Users,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,10 +20,27 @@ const NAV = [
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/access-requests", label: "Access requests", icon: ShieldCheck },
+  { to: "/admin/feature-requests", label: "Feature requests", icon: Lightbulb },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const heartbeat = () => void recordActivity("app_access");
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") heartbeat();
+    };
+    const interval = window.setInterval(heartbeat, 60_000);
+    heartbeat();
+    window.addEventListener("focus", heartbeat);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", heartbeat);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();

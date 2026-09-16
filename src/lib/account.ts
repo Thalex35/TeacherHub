@@ -40,6 +40,25 @@ export type RecentActivity = {
   created_at: string;
 };
 
+export type LoginHistoryEntry = {
+  id: string;
+  created_at: string;
+  event_type: "login" | "app_access";
+};
+
+export type FeatureRequest = {
+  id: string;
+  user_id: string;
+  subject: string;
+  description: string;
+  priority: "low" | "medium" | "high";
+  status: "open" | "planned" | "completed" | "declined";
+  created_at: string;
+  updated_at: string;
+  requester_name?: string | null;
+  requester_email?: string | null;
+};
+
 const profiles = () => supabase.from("profiles" as never);
 
 export async function getAccountProfile(userId: string) {
@@ -52,6 +71,61 @@ export async function listAccountProfiles() {
   const { data, error } = await profiles().select("*").order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as AccountProfile[];
+}
+
+export async function listMyLoginHistory() {
+  const { data, error } = await supabase
+    .from("activity_events" as never)
+    .select("id, created_at, event_type")
+    .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "")
+    .eq("event_type", "login")
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as LoginHistoryEntry[];
+}
+
+export async function updateAccountName(fullName: string) {
+  const { error } = await supabase.rpc(
+    "update_my_profile_name" as never,
+    { next_full_name: fullName } as never,
+  );
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteMyAccount() {
+  const { error } = await supabase.rpc("delete_my_account" as never);
+  if (error) throw new Error(error.message);
+}
+
+export async function createFeatureRequest(values: Pick<FeatureRequest, "subject" | "description" | "priority">) {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error("You must be signed in to submit a feature request.");
+  const { error } = await supabase.from("feature_requests" as never).insert({
+    ...values,
+    user_id: user.user.id,
+  } as never);
+  if (error) throw new Error(error.message);
+}
+
+export async function listFeatureRequests() {
+  const { data, error } = await supabase
+    .from("feature_requests" as never)
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  const profiles = await listAccountProfiles();
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+  return (data ?? []).map((item) => {
+    const row = item as FeatureRequest;
+    const requester = profileById.get(row.user_id);
+    return { ...row, requester_name: requester?.full_name, requester_email: requester?.email };
+  });
+}
+
+export async function updateFeatureRequestStatus(id: string, status: FeatureRequest["status"]) {
+  const { error } = await supabase.from("feature_requests" as never).update({ status, updated_at: new Date().toISOString() } as never).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function updateAccountStatus(

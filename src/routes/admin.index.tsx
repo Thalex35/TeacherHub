@@ -145,6 +145,6 @@ export function formatRelative(value: string | null) {
 }
 
 export function isOnline(value: string | null) {
-  return Boolean(value && Date.now() - new Date(value).getTime() < 5 * 60 * 1000);
+  return Boolean(value && Date.now() - new Date(value).getTime() <= 90_000);
 }
 

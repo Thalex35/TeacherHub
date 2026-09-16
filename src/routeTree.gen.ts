@@ -25,12 +25,14 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedEvaluationsRouteImport } from './routes/_authenticated/evaluations'
 import { Route as AuthenticatedGradebookRouteImport } from './routes/_authenticated/gradebook'
 import { Route as AuthenticatedPlannerRouteImport } from './routes/_authenticated/planner'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAccessRequestsRouteImport } from './routes/admin.access-requests'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
+import { Route as AdminFeatureRequestsRouteImport } from './routes/admin.feature-requests'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes.$classId'
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated/students.$studentId'
@@ -118,6 +120,11 @@ const AuthenticatedPlannerRoute = AuthenticatedPlannerRouteImport.update({
   path: '/planner',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -146,6 +153,11 @@ const AdminAccessRequestsRoute = AdminAccessRequestsRouteImport.update({
 const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFeatureRequestsRoute = AdminFeatureRequestsRouteImport.update({
+  id: '/feature-requests',
+  path: '/feature-requests',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -192,11 +204,13 @@ export interface FileRoutesByFullPath {
   '/evaluations': typeof AuthenticatedEvaluationsRoute
   '/gradebook': typeof AuthenticatedGradebookRoute
   '/planner': typeof AuthenticatedPlannerRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/feature-requests': typeof AdminFeatureRequestsRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
@@ -219,11 +233,13 @@ export interface FileRoutesByTo {
   '/evaluations': typeof AuthenticatedEvaluationsRoute
   '/gradebook': typeof AuthenticatedGradebookRoute
   '/planner': typeof AuthenticatedPlannerRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/feature-requests': typeof AdminFeatureRequestsRoute
   '/admin': typeof AdminIndexRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
@@ -248,11 +264,13 @@ export interface FileRoutesById {
   '/_authenticated/evaluations': typeof AuthenticatedEvaluationsRoute
   '/_authenticated/gradebook': typeof AuthenticatedGradebookRoute
   '/_authenticated/planner': typeof AuthenticatedPlannerRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/feature-requests': typeof AdminFeatureRequestsRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
@@ -278,11 +296,13 @@ export interface FileRouteTypes {
     | '/evaluations'
     | '/gradebook'
     | '/planner'
+    | '/profile'
     | '/reports'
     | '/settings'
     | '/students'
     | '/admin/access-requests'
     | '/admin/analytics'
+    | '/admin/feature-requests'
     | '/admin/users'
     | '/admin/'
     | '/classes/$classId'
@@ -305,11 +325,13 @@ export interface FileRouteTypes {
     | '/evaluations'
     | '/gradebook'
     | '/planner'
+    | '/profile'
     | '/reports'
     | '/settings'
     | '/students'
     | '/admin/access-requests'
     | '/admin/analytics'
+    | '/admin/feature-requests'
     | '/admin'
     | '/classes/$classId'
     | '/students/$studentId'
@@ -333,11 +355,13 @@ export interface FileRouteTypes {
     | '/_authenticated/evaluations'
     | '/_authenticated/gradebook'
     | '/_authenticated/planner'
+    | '/_authenticated/profile'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/students'
     | '/admin/access-requests'
     | '/admin/analytics'
+    | '/admin/feature-requests'
     | '/admin/users'
     | '/admin/'
     | '/_authenticated/classes/$classId'
@@ -470,6 +494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlannerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reports': {
       id: '/_authenticated/reports'
       path: '/reports'
@@ -510,6 +541,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/admin/analytics'
       preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/feature-requests': {
+      id: '/admin/feature-requests'
+      path: '/feature-requests'
+      fullPath: '/admin/feature-requests'
+      preLoaderRoute: typeof AdminFeatureRequestsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/users': {
@@ -584,6 +622,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEvaluationsRoute: typeof AuthenticatedEvaluationsRoute
   AuthenticatedGradebookRoute: typeof AuthenticatedGradebookRoute
   AuthenticatedPlannerRoute: typeof AuthenticatedPlannerRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
@@ -599,6 +638,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEvaluationsRoute: AuthenticatedEvaluationsRoute,
   AuthenticatedGradebookRoute: AuthenticatedGradebookRoute,
   AuthenticatedPlannerRoute: AuthenticatedPlannerRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
@@ -624,6 +664,7 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminAccessRequestsRoute: typeof AdminAccessRequestsRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminFeatureRequestsRoute: typeof AdminFeatureRequestsRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -631,6 +672,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAccessRequestsRoute: AdminAccessRequestsRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminFeatureRequestsRoute: AdminFeatureRequestsRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }

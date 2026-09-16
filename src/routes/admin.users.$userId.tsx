@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, Mail, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, Mail, ShieldCheck, Users, UserX } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { listAccountProfiles, listAccountUsage, type AccountProfile, type AccountUsage } from "@/lib/account";
+import { getAccountProfile, listAccountProfiles, listAccountUsage, updateAccountStatus, type AccountProfile, type AccountUsage } from "@/lib/account";
+import { supabase } from "@/integrations/supabase/client";
 import { formatRelative, isOnline, PageIntro } from "./admin.index";
 
 export const Route = createFileRoute("/admin/users/$userId")({
@@ -15,6 +18,8 @@ function AdminUserDetailPage() {
   const { userId } = Route.useParams();
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [usage, setUsage] = useState<AccountUsage | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     void Promise.all([listAccountProfiles(), listAccountUsage()]).then(([profiles, usages]) => {
@@ -23,14 +28,37 @@ function AdminUserDetailPage() {
     });
   }, [userId]);
 
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, []);
+
   if (!profile) return <p className="text-sm text-muted-foreground">Loading user...</p>;
 
   const online = isOnline(profile.last_seen_at);
+  const canChangeStatus = currentUserId !== profile.id;
+  const changeStatus = async () => {
+    if (!currentUserId || !canChangeStatus) return;
+    setUpdatingStatus(true);
+    try {
+      await updateAccountStatus(
+        profile.id,
+        profile.account_status === "suspended" ? "approved" : "suspended",
+        currentUserId,
+      );
+      const updated = await getAccountProfile(profile.id);
+      setProfile(updated);
+      toast.success(updated?.account_status === "suspended" ? "User suspended" : "User reactivated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update user status");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
   return (
     <div>
       <Link to="/admin/users" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />Back to users</Link>
       <PageIntro title={profile.full_name || "User details"} description={profile.email} />
-      <div className="mt-6 flex flex-wrap items-center gap-3"><Badge variant="outline">{profile.account_status}</Badge>{profile.role === "admin" ? <Badge>Admin</Badge> : null}<span className="flex items-center gap-2 text-sm text-muted-foreground"><span className={`size-2 rounded-full ${online ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />{online ? "Online now" : `Last connection ${formatRelative(profile.last_seen_at)}`}</span></div>
+      <div className="mt-6 flex flex-wrap items-center gap-3"><Badge variant="outline">{profile.account_status}</Badge>{profile.role === "admin" ? <Badge>Admin</Badge> : null}<span className="flex items-center gap-2 text-sm text-muted-foreground"><span className={`size-2 rounded-full ${online ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />{online ? "Online now" : `Last connection ${formatRelative(profile.last_seen_at)}`}</span>{canChangeStatus ? <Button size="sm" variant={profile.account_status === "suspended" ? "default" : "outline"} onClick={() => void changeStatus()} disabled={updatingStatus}><UserX className="mr-2 size-4" />{updatingStatus ? "Updating..." : profile.account_status === "suspended" ? "Reactivate user" : "Suspend user"}</Button> : null}</div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <section className="admin-card admin-card--lilac overflow-hidden"><div className="border-b border-border/70 px-5 py-4"><h2 className="font-semibold">Account information</h2></div><div className="grid gap-5 p-5 sm:grid-cols-2"><Info icon={Mail} label="Email" value={profile.email} /><Info icon={CalendarDays} label="Registered" value={new Date(profile.created_at).toLocaleDateString()} /><Info icon={Clock3} label="Last connection" value={profile.last_seen_at ? new Date(profile.last_seen_at).toLocaleString() : "Never"} /><Info icon={ShieldCheck} label="Approved" value={profile.approved_at ? new Date(profile.approved_at).toLocaleDateString() : "Not approved"} /><Info icon={CheckCircle2} label="Onboarding" value={profile.onboarding_completed_at ? "Completed" : "Not completed"} /></div></section>
