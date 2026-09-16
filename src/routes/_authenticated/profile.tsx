@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   Check,
@@ -542,23 +542,13 @@ function ProfilePage() {
               />
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button variant="outline" asChild>
-                  <a href="https://help.teacherhub.com" target="_blank" rel="noreferrer">
-                    Visit Help Center <ExternalLink className="ml-2 size-4" />
-                  </a>
+                  <Link to="/help#faq">Visit Help Center</Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <a
-                    href="https://github.com/teacherhub/teacherhub/issues"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Report a Bug <ExternalLink className="ml-2 size-4" />
-                  </a>
+                  <Link to="/help#bug">Report a Bug</Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <a href="https://help.teacherhub.com/faq" target="_blank" rel="noreferrer">
-                    Frequently Asked Questions <ExternalLink className="ml-2 size-4" />
-                  </a>
+                  <Link to="/help#faq">Frequently Asked Questions</Link>
                 </Button>
               </div>
               <div className="mt-8 space-y-4">
