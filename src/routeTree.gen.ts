@@ -24,6 +24,7 @@ import { Route as AuthenticatedCurriculumRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEvaluationsRouteImport } from './routes/_authenticated/evaluations'
 import { Route as AuthenticatedGradebookRouteImport } from './routes/_authenticated/gradebook'
+import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/help'
 import { Route as AuthenticatedPlannerRouteImport } from './routes/_authenticated/planner'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -114,6 +115,11 @@ const AuthenticatedEvaluationsRoute =
 const AuthenticatedGradebookRoute = AuthenticatedGradebookRouteImport.update({
   id: '/gradebook',
   path: '/gradebook',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHelpRoute = AuthenticatedHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPlannerRoute = AuthenticatedPlannerRouteImport.update({
@@ -209,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/evaluations': typeof AuthenticatedEvaluationsRoute
   '/gradebook': typeof AuthenticatedGradebookRoute
+  '/help': typeof AuthenticatedHelpRoute
   '/planner': typeof AuthenticatedPlannerRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/evaluations': typeof AuthenticatedEvaluationsRoute
   '/gradebook': typeof AuthenticatedGradebookRoute
+  '/help': typeof AuthenticatedHelpRoute
   '/planner': typeof AuthenticatedPlannerRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/evaluations': typeof AuthenticatedEvaluationsRoute
   '/_authenticated/gradebook': typeof AuthenticatedGradebookRoute
+  '/_authenticated/help': typeof AuthenticatedHelpRoute
   '/_authenticated/planner': typeof AuthenticatedPlannerRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/evaluations'
     | '/gradebook'
+    | '/help'
     | '/planner'
     | '/profile'
     | '/reports'
@@ -334,6 +344,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/evaluations'
     | '/gradebook'
+    | '/help'
     | '/planner'
     | '/profile'
     | '/reports'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/evaluations'
     | '/_authenticated/gradebook'
+    | '/_authenticated/help'
     | '/_authenticated/planner'
     | '/_authenticated/profile'
     | '/_authenticated/reports'
@@ -497,6 +509,13 @@ declare module '@tanstack/react-router' {
       path: '/gradebook'
       fullPath: '/gradebook'
       preLoaderRoute: typeof AuthenticatedGradebookRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/help': {
+      id: '/_authenticated/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AuthenticatedHelpRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/planner': {
@@ -640,6 +659,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEvaluationsRoute: typeof AuthenticatedEvaluationsRoute
   AuthenticatedGradebookRoute: typeof AuthenticatedGradebookRoute
+  AuthenticatedHelpRoute: typeof AuthenticatedHelpRoute
   AuthenticatedPlannerRoute: typeof AuthenticatedPlannerRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -656,6 +676,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEvaluationsRoute: AuthenticatedEvaluationsRoute,
   AuthenticatedGradebookRoute: AuthenticatedGradebookRoute,
+  AuthenticatedHelpRoute: AuthenticatedHelpRoute,
   AuthenticatedPlannerRoute: AuthenticatedPlannerRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,

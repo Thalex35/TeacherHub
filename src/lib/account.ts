@@ -112,6 +112,11 @@ export async function deleteMyAccount() {
   if (error) throw new Error(error.message);
 }
 
+export async function adminDeleteUser(userId: string) {
+  const { error } = await supabase.rpc("admin_delete_user" as never, { target_user_id: userId } as never);
+  if (error) throw new Error(error.message);
+}
+
 export async function createFeatureRequest(values: Pick<FeatureRequest, "subject" | "description" | "priority">) {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error("You must be signed in to submit a feature request.");
