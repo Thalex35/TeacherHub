@@ -3,6 +3,7 @@ import { Search, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 import { listAccountProfiles, listAccountUsage, type AccountProfile, type AccountUsage } from "@/lib/account";
 import { formatRelative, isOnline, PageIntro } from "./admin.index";
 
@@ -17,10 +18,33 @@ function AdminUsersPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    void Promise.all([listAccountProfiles(), listAccountUsage()]).then(([accounts, accountUsage]) => {
-      setProfiles(accounts);
-      setUsage(accountUsage);
-    });
+    const loadProfiles = () => listAccountProfiles().then(setProfiles);
+    const loadUsage = () => listAccountUsage().then(setUsage);
+
+    void loadProfiles();
+    void loadUsage();
+    const refresh = window.setInterval(() => {
+      void loadProfiles();
+      void loadUsage();
+    }, 15_000);
+    const channel = supabase
+      .channel("admin-users-presence")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles" },
+        (payload) => {
+          const updated = payload.new as AccountProfile;
+          setProfiles((current) =>
+            current.map((profile) => (profile.id === updated.id ? { ...profile, ...updated } : profile)),
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      window.clearInterval(refresh);
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   const usageByUser = new Map(usage.map((item) => [item.user_id, item]));

@@ -1,3 +1,4 @@
+import { recordActivity } from "@/lib/account";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
@@ -8,7 +9,7 @@ import {
   Settings2,
   Users,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,22 @@ const NAV = [
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const heartbeat = () => void recordActivity("app_access");
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") heartbeat();
+    };
+    const interval = window.setInterval(heartbeat, 60_000);
+    heartbeat();
+    window.addEventListener("focus", heartbeat);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", heartbeat);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();
