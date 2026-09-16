@@ -12,6 +12,7 @@ export type AccountProfile = {
   max_students: number;
   max_classes: number;
   max_storage_bytes: number;
+  onboarding_completed_at: string | null;
 };
 
 export type AccountUsage = {
@@ -107,4 +108,13 @@ export async function listRecentActivity() {
   const { data, error } = await supabase.rpc("admin_recent_activity" as never);
   if (error) throw new Error(error.message);
   return (data ?? []) as RecentActivity[];
+}
+
+export async function markOnboardingComplete() {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return;
+  const { error } = await profiles()
+    .update({ onboarding_completed_at: new Date().toISOString() } as never)
+    .eq("id", data.user.id);
+  if (error) throw new Error(error.message);
 }
