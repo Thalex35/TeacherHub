@@ -7,13 +7,13 @@ import {
   GraduationCap,
   LayoutDashboard,
   ListChecks,
-  LogOut,
   Menu,
   NotebookPen,
   Settings as SettingsIcon,
   ShieldCheck,
   Table2,
   UserCheck,
+  UserCircle,
   Users,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -23,23 +23,24 @@ import { EventNotifications } from "@/components/event-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/lib/data";
 import { getAccountProfile } from "@/lib/account";
+import { useLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/students", label: "Students", icon: Users },
-  { to: "/classes", label: "Classes", icon: GraduationCap },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
-  { to: "/attendance", label: "Attendance", icon: UserCheck },
+  { to: "/dashboard", key: "dashboard", icon: LayoutDashboard },
+  { to: "/students", key: "students", icon: Users },
+  { to: "/classes", key: "classes", icon: GraduationCap },
+  { to: "/calendar", key: "calendar", icon: CalendarDays },
+  { to: "/attendance", key: "attendance", icon: UserCheck },
 ] as const;
 
 const MANAGEMENT_NAV = [
-  { to: "/curriculum", label: "Curriculum", icon: BookOpen },
-  { to: "/planner", label: "Planner", icon: NotebookPen },
-  { to: "/assignments", label: "Assignments", icon: ClipboardList },
-  { to: "/gradebook", label: "Gradebook", icon: Table2 },
-  { to: "/evaluations", label: "Evaluations", icon: ListChecks },
-  { to: "/reports", label: "Reports", icon: FileBarChart },
+  { to: "/curriculum", key: "curriculum", icon: BookOpen },
+  { to: "/planner", key: "planner", icon: NotebookPen },
+  { to: "/assignments", key: "assignments", icon: ClipboardList },
+  { to: "/gradebook", key: "gradebook", icon: Table2 },
+  { to: "/evaluations", key: "evaluations", icon: ListChecks },
+  { to: "/reports", key: "reports", icon: FileBarChart },
 ] as const;
 
 const SETTINGS_NAV = [{ to: "/settings", label: "Settings", icon: SettingsIcon }] as const;
@@ -47,21 +48,19 @@ const SETTINGS_NAV = [{ to: "/settings", label: "Settings", icon: SettingsIcon }
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [profileName, setProfileName] = useState("");
   const { data: settings } = useSettings();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     void supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const profile = await getAccountProfile(data.user.id);
       setIsAdmin(profile?.role === "admin" && profile.account_status === "approved");
+      setProfileName(profile?.full_name ?? "");
     });
   }, []);
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    void navigate({ to: "/auth" });
-  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -98,14 +97,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }}
               >
                 <item.icon className="size-4 shrink-0" />
-                {item.label}
+                {t(item.key)}
               </Link>
             ))}
           </div>
 
           <div className="space-y-1">
             <p className="px-3 text-[10px] font-medium uppercase tracking-[0.18em] text-sidebar-foreground/50">
-              Management
+              {t("management")}
             </p>
             {MANAGEMENT_NAV.map((item, index) => (
               <Link
@@ -120,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }}
               >
                 <item.icon className="size-4 shrink-0" />
-                {item.label}
+                {t(item.key)}
               </Link>
             ))}
           </div>
@@ -138,7 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }}
               >
                 <item.icon className="size-4 shrink-0" />
-                {item.label}
+                {t("settings")}
               </Link>
             ))}
           </div>
@@ -155,21 +154,29 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }}
               >
                 <ShieldCheck className="size-4 shrink-0" />
-                Admin
+                {t("admin")}
               </Link>
             </div>
           ) : null}
         </nav>
 
         <div className="border-t border-sidebar-border px-3 py-3">
-          <p className="px-3 pb-2 text-xs text-sidebar-foreground/60">
-            {settings?.teacher_name ?? "Teacher"}
-          </p>
           <button
-            onClick={signOut}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-sidebar-accent"
+            onClick={() => void navigate({ to: "/profile" })}
+            aria-label={t("myProfile")}
           >
-            <LogOut className="size-4" /> Sign out
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
+              {(profileName || settings?.teacher_name || "T").slice(0, 2).toUpperCase()}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-sidebar-foreground">
+                {profileName || settings?.teacher_name || "Teacher"}
+              </span>
+              <span className="block text-xs text-sidebar-foreground/60">{t("myProfile")}</span>
+            </span>
+            <UserCircle className="size-4 text-sidebar-foreground/70" />
           </button>
         </div>
       </aside>
@@ -196,6 +203,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   ExternalLink,
+  Lightbulb,
   LayoutDashboard,
   LogOut,
   ShieldCheck,
@@ -19,6 +20,7 @@ const NAV = [
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/access-requests", label: "Access requests", icon: ShieldCheck },
+  { to: "/admin/feature-requests", label: "Feature requests", icon: Lightbulb },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
