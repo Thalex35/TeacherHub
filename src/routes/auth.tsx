@@ -1,13 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { GraduationCap } from "lucide-react";
+import { Chrome, GraduationCap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// Keep the original Lovable OAuth flow in comments for later re-enablement.
-// import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { recordActivity } from "@/lib/account";
 
@@ -65,6 +63,18 @@ function AuthPage() {
     }
     if (data.session) void navigate({ to: "/pending" });
     else toast.success("Account created. Check your inbox to confirm your email.");
+  };
+
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+    }
   };
 
   // Single-user mode: keep original sign-up flow commented out for later re-enablement.
@@ -131,6 +141,24 @@ function AuthPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {isRegistering ? "Request access" : "Sign in"}
             </Button>
+            {!isRegistering ? (
+              <>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="h-px flex-1 bg-border" />
+                  <span>or</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={loading}
+                  onClick={() => void signInWithGoogle()}
+                >
+                  <Chrome className="mr-2 size-4" /> Continue with Google
+                </Button>
+              </>
+            ) : null}
             <button
               type="button"
               className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
@@ -141,10 +169,6 @@ function AuthPage() {
                 : "Need an account? Request access"}
             </button>
           </form>
-
-          {/* Alternative sign-in methods are intentionally disabled for this single-user setup.
-              Keep the original code commented here for later re-enablement.
-          */}
         </div>
       </div>
     </div>
