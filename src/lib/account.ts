@@ -21,6 +21,23 @@ export type AccountUsage = {
   storage_bytes: number;
 };
 
+export type ActivitySummary = {
+  active_today: number;
+  active_week: number;
+  logins_today: number;
+  registrations_today: number;
+  registrations_week: number;
+};
+
+export type RecentActivity = {
+  event_id: string;
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  event_type: "login" | "app_access";
+  created_at: string;
+};
+
 const profiles = () => supabase.from("profiles" as never);
 
 export async function getAccountProfile(userId: string) {
@@ -64,4 +81,30 @@ export async function updateAccountLimits(
     .update(limits as never)
     .eq("id", id);
   if (error) throw new Error(error.message);
+}
+
+export async function recordActivity(eventType: "login" | "app_access") {
+  const { error } = await supabase.rpc(
+    "record_activity" as never,
+    { activity_type: eventType } as never,
+  );
+  if (error) throw new Error(error.message);
+}
+
+export async function getActivitySummary() {
+  const { data, error } = await supabase.rpc("admin_activity_summary" as never);
+  if (error) throw new Error(error.message);
+  return ((data as ActivitySummary[] | null)?.[0] ?? {
+    active_today: 0,
+    active_week: 0,
+    logins_today: 0,
+    registrations_today: 0,
+    registrations_week: 0,
+  }) as ActivitySummary;
+}
+
+export async function listRecentActivity() {
+  const { data, error } = await supabase.rpc("admin_recent_activity" as never);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RecentActivity[];
 }

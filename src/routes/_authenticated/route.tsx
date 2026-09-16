@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
-import { getAccountProfile } from "@/lib/account";
+import { getAccountProfile, recordActivity } from "@/lib/account";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) throw redirect({ to: "/auth" });
     const profile = await getAccountProfile(data.user.id);
     if (!profile || profile.account_status !== "approved") throw redirect({ to: "/pending" });
+    void recordActivity("app_access");
     return { user: data.user, profile };
   },
   component: () => (
