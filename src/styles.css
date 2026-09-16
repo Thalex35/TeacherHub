@@ -223,3 +223,307 @@
     background: white;
   }
 }
+
+@utility admin-card {
+  border: 1px solid var(--admin-card-border, oklch(0.87 0.025 250));
+  border-radius: 0.9rem;
+  box-shadow: 0 12px 28px oklch(0.28 0.03 255 / 0.06);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+@utility admin-card--sky {
+  background: oklch(0.965 0.025 220);
+  --admin-card-border: oklch(0.87 0.045 220);
+}
+
+@utility admin-card--mint {
+  background: oklch(0.96 0.035 160);
+  --admin-card-border: oklch(0.86 0.055 160);
+}
+
+@utility admin-card--lilac {
+  background: oklch(0.965 0.03 300);
+  --admin-card-border: oklch(0.87 0.045 300);
+}
+
+@utility admin-card--peach {
+  background: oklch(0.97 0.035 65);
+  --admin-card-border: oklch(0.88 0.055 65);
+}
+
+@utility admin-card--plain {
+  background: oklch(0.995 0.006 95);
+}
+
+.admin-workspace {
+  background-color: oklch(0.965 0.012 95);
+  background-image:
+    linear-gradient(135deg, oklch(1 0 0 / 0.5), transparent 38%),
+    linear-gradient(oklch(0.6 0.04 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.6 0.04 255 / 0.035) 1px, transparent 1px);
+  background-size: auto, 36px 36px, 36px 36px;
+}
+
+.admin-sidebar {
+  background: oklch(0.23 0.035 258);
+  box-shadow: 16px 0 40px oklch(0.2 0.03 258 / 0.12);
+}
+
+.admin-sidebar-link {
+  border: 1px solid transparent;
+}
+
+.admin-sidebar-link[data-status="active"] {
+  border-color: oklch(0.8 0.08 185 / 0.2);
+  background: oklch(0.34 0.05 245);
+  box-shadow: inset 3px 0 0 oklch(0.76 0.12 180);
+}
+
+.admin-card:hover {
+  border-color: oklch(0.72 0.06 220 / 0.55);
+  box-shadow: 0 16px 34px oklch(0.28 0.03 255 / 0.1);
+}
+
+/* Admin workspace: minimalist monochrome with emerald interaction states. */
+.admin-workspace {
+  --background: #f8f9fa;
+  --foreground: #1f2937;
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --primary: #10b981;
+  --primary-foreground: #ffffff;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #10b981;
+  --accent: #f0fdf4;
+  --accent-foreground: #047857;
+  background: #f8f9fa;
+  color: #1f2937;
+}
+
+.admin-workspace .admin-card,
+.admin-workspace .admin-card--sky,
+.admin-workspace .admin-card--mint,
+.admin-workspace .admin-card--lilac,
+.admin-workspace .admin-card--peach,
+.admin-workspace .admin-card--plain {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.06);
+  transition: all 200ms ease-in-out;
+}
+
+.admin-workspace .admin-card:hover,
+.admin-workspace .admin-card--sky:hover,
+.admin-workspace .admin-card--mint:hover,
+.admin-workspace .admin-card--lilac:hover,
+.admin-workspace .admin-card--peach:hover,
+.admin-workspace .admin-card--plain:hover {
+  border-color: #10b981;
+  box-shadow: 0 8px 16px rgb(16 185 129 / 0.12);
+  transform: translateY(-2px);
+}
+
+.admin-workspace .admin-card:focus-visible,
+.admin-workspace a:focus-visible,
+.admin-workspace button:focus-visible,
+.admin-workspace input:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+.admin-workspace .admin-sidebar {
+  background: #000000;
+  border-right: 0;
+  box-shadow: none;
+}
+
+.admin-workspace .admin-sidebar-link {
+  min-height: 52px;
+  border: 1px solid transparent;
+  padding: 16px;
+  color: #ffffff;
+  transition: all 200ms ease-in-out;
+}
+
+.admin-workspace .admin-sidebar > div:first-child p:first-child {
+  color: #9ca3af;
+}
+
+.admin-workspace .admin-sidebar > div:first-child h1 {
+  color: #ffffff;
+}
+
+.admin-workspace .admin-sidebar > div:first-child p:last-child {
+  color: #d1d5db;
+}
+
+.admin-workspace .admin-sidebar > div:last-child > a,
+.admin-workspace .admin-sidebar > div:last-child > button {
+  color: #d1d5db;
+}
+
+.admin-workspace .admin-sidebar > div:last-child > a:hover,
+.admin-workspace .admin-sidebar > div:last-child > button:hover {
+  background: rgb(16 185 129 / 0.1);
+  color: #ffffff;
+}
+
+.admin-workspace .admin-sidebar > div:last-child svg {
+  color: #f3f4f6;
+}
+
+.admin-workspace .admin-sidebar > div:last-child a svg:last-child {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.admin-workspace .admin-sidebar > div:last-child > a:hover svg,
+.admin-workspace .admin-sidebar > div:last-child > button:hover svg {
+  color: #10b981;
+}
+
+.admin-workspace .admin-sidebar-link:hover {
+  background: rgb(16 185 129 / 0.1);
+  color: #10b981;
+}
+
+.admin-workspace .admin-sidebar-link[data-status="active"] {
+  border: 0;
+  background: #10b981;
+  box-shadow: none;
+  color: #ffffff;
+}
+
+.admin-workspace .admin-sidebar-link svg {
+  width: 20px;
+  height: 20px;
+}
+
+.admin-workspace .admin-mobile-header {
+  background: rgb(248 249 250 / 0.92);
+}
+
+.admin-workspace h1 {
+  color: #000000;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.admin-workspace h2 {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.admin-workspace p,
+.admin-workspace time,
+.admin-workspace label {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.admin-workspace .text-xs {
+  font-size: 12px;
+}
+
+.admin-workspace .text-3xl {
+  color: #000000;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.admin-workspace button {
+  border-radius: 8px;
+  transition: all 200ms ease-in-out;
+}
+
+.admin-workspace input,
+.admin-workspace select {
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  transition: all 200ms ease-in-out;
+}
+
+.admin-workspace input:focus,
+.admin-workspace select:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgb(16 185 129 / 0.12);
+}
+
+.admin-workspace .admin-card > .border-b,
+.admin-workspace .admin-card > div[class*="border-b"] {
+  border-color: #e5e7eb;
+}
+
+.admin-workspace .admin-card [class*="divide-y"] > *:nth-child(even) {
+  background: #fafafa;
+}
+
+.admin-workspace .admin-card [class*="divide-y"] > *:hover {
+  background: #f0fdf4;
+  transition: background 200ms ease-in-out;
+}
+
+.admin-workspace .admin-card .bg-primary\/10 {
+  background: #f0fdf4;
+  color: #10b981;
+}
+
+.admin-workspace .admin-card .bg-muted\/30:hover {
+  border-color: #10b981;
+}
+
+.admin-workspace .admin-card [class*="bg-emerald-100"] {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.admin-workspace .admin-card [class*="bg-amber-100"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-workspace .admin-card .bg-primary {
+  background: #10b981;
+}
+
+.admin-workspace .admin-card .text-emerald-600,
+.admin-workspace .admin-card .text-emerald-700,
+.admin-workspace .admin-card .text-primary {
+  color: #10b981;
+}
+
+.admin-workspace .admin-card .text-muted-foreground {
+  color: #6b7280;
+}
+
+.admin-workspace .admin-card .text-sm {
+  color: #6b7280;
+}
+
+.admin-workspace .admin-card .font-medium,
+.admin-workspace .admin-card .font-semibold {
+  color: #1f2937;
+}
+
+.admin-workspace .admin-card time {
+  color: #9ca3af;
+}
+
+.admin-workspace .admin-card--loading {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-workspace .admin-card--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: #f3f4f6;
+  color: #d1d5db;
+}

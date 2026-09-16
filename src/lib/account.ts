@@ -9,6 +9,7 @@ export type AccountProfile = {
   created_at: string;
   approved_at: string | null;
   approved_by: string | null;
+  last_seen_at: string | null;
   max_students: number;
   max_classes: number;
   max_storage_bytes: number;
