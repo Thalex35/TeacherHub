@@ -1,8 +1,9 @@
-import { app, BrowserWindow, Menu, dialog, shell } from "electron";
+import { app, BrowserWindow, Menu, dialog, ipcMain, shell } from "electron";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { createConnection } from "node:net";
-import { join } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { basename, join } from "node:path";
 
 const DEV_URL = process.env.ELECTRON_START_URL;
 const SERVER_PORT = 4173;
@@ -10,6 +11,28 @@ const APP_URL = `http://127.0.0.1:${SERVER_PORT}`;
 const { autoUpdater } = createRequire(import.meta.url)("electron-updater");
 let mainWindow;
 let serverProcess;
+
+ipcMain.handle("open-presentation", async (_event, { url, fileName }) => {
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error("Invalid presentation URL.");
+  }
+
+  if (parsedUrl.protocol !== "https:") throw new Error("Only secure presentation URLs are supported.");
+
+  const safeName = basename(fileName).replace(/[^a-zA-Z0-9._-]/g, "_");
+  const tempDirectory = join(app.getPath("temp"), "TeacherHub", "presentations");
+  const filePath = join(tempDirectory, `${Date.now()}-${safeName || "presentation.pptx"}`);
+  const response = await fetch(parsedUrl);
+  if (!response.ok) throw new Error(`Could not download presentation (${response.status}).`);
+
+  await mkdir(tempDirectory, { recursive: true });
+  await writeFile(filePath, Buffer.from(await response.arrayBuffer()));
+  const error = await shell.openPath(filePath);
+  if (error) throw new Error(error);
+});
 
 function openExternal(url) {
   try {
