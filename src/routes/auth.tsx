@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 // Keep the original Lovable OAuth flow in comments for later re-enablement.
 // import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
+import { recordActivity } from "@/lib/account";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -45,6 +46,7 @@ function AuthPage() {
       toast.error(error.message);
       return;
     }
+    void recordActivity("login");
     void navigate({ to: "/dashboard" });
   };
 

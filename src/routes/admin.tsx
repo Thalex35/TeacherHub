@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import {
   Activity,
+  BarChart3,
   Check,
   Clock3,
   RotateCcw,
@@ -20,6 +21,10 @@ import {
   listAccountProfiles,
   updateAccountStatus,
   type AccountProfile,
+  getActivitySummary,
+  listRecentActivity,
+  type ActivitySummary,
+  type RecentActivity,
 } from "@/lib/account";
 import { listAccountUsage, updateAccountLimits, type AccountUsage } from "@/lib/account";
 
@@ -45,12 +50,17 @@ function AdminPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AccountProfile["account_status"]>("all");
   const [usage, setUsage] = useState<AccountUsage[]>([]);
+  const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
 
   const loadProfiles = async () => {
     setLoading(true);
     try {
       setProfiles(await listAccountProfiles());
       setUsage(await listAccountUsage());
+      const [summary, events] = await Promise.all([getActivitySummary(), listRecentActivity()]);
+      setActivitySummary(summary);
+      setRecentActivity(events);
     } finally {
       setLoading(false);
     }
@@ -114,6 +124,61 @@ function AdminPage() {
             tone="muted"
           />
         </div>
+
+        <section className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+          <div className="surface overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+              <BarChart3 className="size-5 text-primary" />
+              <div>
+                <h2 className="font-semibold">Activity overview</h2>
+                <p className="text-xs text-muted-foreground">Usage across the TeacherHub app</p>
+              </div>
+            </div>
+            <div className="grid gap-4 p-5 sm:grid-cols-2">
+              <ActivityMetric label="Active today" value={activitySummary?.active_today ?? 0} />
+              <ActivityMetric label="Active this week" value={activitySummary?.active_week ?? 0} />
+              <ActivityMetric label="Logins today" value={activitySummary?.logins_today ?? 0} />
+              <ActivityMetric
+                label="New this week"
+                value={activitySummary?.registrations_week ?? 0}
+              />
+            </div>
+          </div>
+
+          <div className="surface overflow-hidden">
+            <div className="border-b border-border px-5 py-4">
+              <h2 className="font-semibold">Recent activity</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Latest sign-ins and app access</p>
+            </div>
+            {recentActivity.length === 0 ? (
+              <p className="p-5 text-sm text-muted-foreground">No activity recorded yet.</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {recentActivity.slice(0, 6).map((event) => (
+                  <div
+                    key={event.event_id}
+                    className="flex items-center justify-between gap-3 px-5 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {event.full_name || event.email}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {event.event_type === "login" ? "Signed in" : "Opened app"}
+                      </p>
+                    </div>
+                    <time
+                      className="shrink-0 text-xs text-muted-foreground"
+                      dateTime={event.created_at}
+                    >
+                      {new Date(event.created_at).toLocaleString()}
+                    </time>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
 
         <div className="mt-8 grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
           <div className="surface overflow-hidden">
@@ -438,6 +503,15 @@ function Metric({
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="mt-2 text-3xl font-semibold">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function ActivityMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-4">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-semibold">{value}</p>
     </div>
   );
 }
