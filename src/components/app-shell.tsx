@@ -54,6 +54,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
 
   useEffect(() => {
+    const theme = localStorage.getItem("teacherhub-user-theme");
+    const dark = theme === "dark" || (theme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", dark);
     void supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const profile = await getAccountProfile(data.user.id);

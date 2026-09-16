@@ -33,6 +33,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAccessRequestsRouteImport } from './routes/admin.access-requests'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminFeatureRequestsRouteImport } from './routes/admin.feature-requests'
+import { Route as AdminHelpSupportRouteImport } from './routes/admin.help-support'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authenticated/classes.$classId'
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated/students.$studentId'
@@ -160,6 +161,11 @@ const AdminFeatureRequestsRoute = AdminFeatureRequestsRouteImport.update({
   path: '/feature-requests',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminHelpSupportRoute = AdminHelpSupportRouteImport.update({
+  id: '/help-support',
+  path: '/help-support',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/feature-requests': typeof AdminFeatureRequestsRoute
+  '/admin/help-support': typeof AdminHelpSupportRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/feature-requests': typeof AdminFeatureRequestsRoute
+  '/admin/help-support': typeof AdminHelpSupportRoute
   '/admin': typeof AdminIndexRoute
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/feature-requests': typeof AdminFeatureRequestsRoute
+  '/admin/help-support': typeof AdminHelpSupportRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
@@ -303,6 +312,7 @@ export interface FileRouteTypes {
     | '/admin/access-requests'
     | '/admin/analytics'
     | '/admin/feature-requests'
+    | '/admin/help-support'
     | '/admin/users'
     | '/admin/'
     | '/classes/$classId'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/admin/access-requests'
     | '/admin/analytics'
     | '/admin/feature-requests'
+    | '/admin/help-support'
     | '/admin'
     | '/classes/$classId'
     | '/students/$studentId'
@@ -362,6 +373,7 @@ export interface FileRouteTypes {
     | '/admin/access-requests'
     | '/admin/analytics'
     | '/admin/feature-requests'
+    | '/admin/help-support'
     | '/admin/users'
     | '/admin/'
     | '/_authenticated/classes/$classId'
@@ -550,6 +562,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFeatureRequestsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/help-support': {
+      id: '/admin/help-support'
+      path: '/help-support'
+      fullPath: '/admin/help-support'
+      preLoaderRoute: typeof AdminHelpSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -665,6 +684,7 @@ interface AdminRouteChildren {
   AdminAccessRequestsRoute: typeof AdminAccessRequestsRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminFeatureRequestsRoute: typeof AdminFeatureRequestsRoute
+  AdminHelpSupportRoute: typeof AdminHelpSupportRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -673,6 +693,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAccessRequestsRoute: AdminAccessRequestsRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminFeatureRequestsRoute: AdminFeatureRequestsRoute,
+  AdminHelpSupportRoute: AdminHelpSupportRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }

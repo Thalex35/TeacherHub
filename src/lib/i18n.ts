@@ -55,6 +55,11 @@ export function setLanguage(language: Language) {
   window.dispatchEvent(new CustomEvent(languageEvent, { detail: language }));
 }
 
+export function applyStoredLanguage() {
+  if (typeof document === "undefined") return;
+  document.documentElement.lang = getLanguage();
+}
+
 export function useLanguage() {
   const [language, setCurrentLanguage] = useState<Language>(getLanguage);
 

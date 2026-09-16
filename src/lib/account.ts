@@ -59,6 +59,20 @@ export type FeatureRequest = {
   requester_email?: string | null;
 };
 
+export type SupportRequest = {
+  id: string;
+  user_id: string;
+  subject: string;
+  message: string;
+  screenshot_path: string | null;
+  status: "open" | "in_progress" | "resolved";
+  created_at: string;
+  updated_at: string;
+  screenshot_url?: string | null;
+  requester_name?: string | null;
+  requester_email?: string | null;
+};
+
 const profiles = () => supabase.from("profiles" as never);
 
 export async function getAccountProfile(userId: string) {
@@ -105,6 +119,37 @@ export async function createFeatureRequest(values: Pick<FeatureRequest, "subject
     ...values,
     user_id: user.user.id,
   } as never);
+  if (error) throw new Error(error.message);
+}
+
+export async function createSupportRequest(values: { subject: string; message: string; screenshot?: File | null }) {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error("You must be signed in to contact support.");
+  let screenshotPath: string | null = null;
+  if (values.screenshot) {
+    screenshotPath = `${user.user.id}/${crypto.randomUUID()}-${values.screenshot.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const { error } = await supabase.storage.from("support-screenshots").upload(screenshotPath, values.screenshot, { contentType: values.screenshot.type, upsert: false });
+    if (error) throw new Error(error.message);
+  }
+  const { error } = await supabase.from("support_requests" as never).insert({ user_id: user.user.id, subject: values.subject, message: values.message, screenshot_path: screenshotPath } as never);
+  if (error) throw new Error(error.message);
+}
+
+export async function listSupportRequests() {
+  const { data, error } = await supabase.from("support_requests" as never).select("*").order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  const profiles = await listAccountProfiles();
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+  return Promise.all((data ?? []).map(async (item) => {
+    const row = item as SupportRequest;
+    const requester = profileById.get(row.user_id);
+    const signed = row.screenshot_path ? await supabase.storage.from("support-screenshots").createSignedUrl(row.screenshot_path, 3600) : { data: null };
+    return { ...row, screenshot_url: signed.data?.signedUrl ?? null, requester_name: requester?.full_name, requester_email: requester?.email };
+  }));
+}
+
+export async function updateSupportRequestStatus(id: string, status: SupportRequest["status"]) {
+  const { error } = await supabase.from("support_requests" as never).update({ status, updated_at: new Date().toISOString() } as never).eq("id", id);
   if (error) throw new Error(error.message);
 }
 

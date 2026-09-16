@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { applyStoredLanguage } from "../lib/i18n";
 
 function NotFoundComponent() {
   return (
@@ -136,6 +137,8 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
+    applyStoredLanguage();
+    applyStoredTheme();
     const channel = supabase
       .channel("teacherhub-live-sync")
       .on("postgres_changes", { event: "*", schema: "public" }, () => {
@@ -155,4 +158,10 @@ function RootComponent() {
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
+}
+
+function applyStoredTheme() {
+  const theme = localStorage.getItem("teacherhub-user-theme");
+  const dark = theme === "dark" || (theme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
 }

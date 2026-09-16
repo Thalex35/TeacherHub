@@ -3,14 +3,17 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   ExternalLink,
+  Headphones,
   Lightbulb,
   LayoutDashboard,
   LogOut,
+  Moon,
   ShieldCheck,
   Settings2,
+  Sun,
   Users,
 } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,12 +24,22 @@ const NAV = [
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/access-requests", label: "Access requests", icon: ShieldCheck },
   { to: "/admin/feature-requests", label: "Feature requests", icon: Lightbulb },
+  { to: "/admin/help-support", label: "Help & support", icon: Headphones },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const [dark, setDark] = useState(() => localStorage.getItem("teacherhub-admin-theme") === "dark");
+
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem("teacherhub-admin-theme", next ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", next);
+  };
 
   useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
     const heartbeat = () => void recordActivity("app_access");
     const handleVisibility = () => {
       if (document.visibilityState === "visible") heartbeat();
@@ -77,6 +90,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="border-t border-sidebar-border pt-4">
+          <Button variant="ghost" className="w-full justify-start gap-3 px-3 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={toggleTheme}>
+            {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            {dark ? "Use light theme" : "Use dark theme"}
+          </Button>
           <Link
             to="/settings"
               className="admin-sidebar-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -111,9 +128,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <p className="font-display font-semibold">Admin workspace</p>
               <p className="text-xs text-muted-foreground">TeacherHub platform operations</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => void navigate({ to: "/dashboard" })}>
-              Exit admin
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={toggleTheme} aria-label={dark ? "Use light theme" : "Use dark theme"}>
+                {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => void navigate({ to: "/dashboard" })}>
+                Exit admin
+              </Button>
+            </div>
           </div>
           <nav className="mt-3 grid grid-cols-2 gap-2" aria-label="Admin navigation">
             {NAV.map((item) => (
