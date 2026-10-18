@@ -46,6 +46,8 @@ function AttendancePage() {
   const rows = attendance.data ?? [];
 
   useEffect(() => {
+    if (a.loading || !attendance.isSuccess) return;
+
     const next: Record<string, string> = {};
     for (const s of students) {
       const existing = rows.find((r) => r.student_id === s.id && r.session_date === date);
@@ -53,7 +55,7 @@ function AttendancePage() {
     }
     setDraft(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeClass, date, attendance.dataUpdatedAt]);
+  }, [a.loading, activeClass, date, attendance.isSuccess]);
 
   const save = async () => {
     if (!students.length) { toast.error("This class has no active students."); return; }
