@@ -1,5 +1,7 @@
 import type { Assessment, EvaluationType, Grade, GradeWeight } from "./types";
 
+export const FINAL_GRADE_SCALE = 100;
+
 export function round(value: number, precision = 2) {
   const f = Math.pow(10, precision);
   return Math.round(value * f) / f;
@@ -32,8 +34,8 @@ export interface FinalGradeResult {
 
 /**
  * Computes a student's period grade from their grades using the configured
- * per-evaluation-type weights. Types with no graded work are excluded and the
- * remaining weights are re-normalised, so the result is never artificially low.
+ * per-evaluation-type weights. A final grade is available only after every
+ * positively weighted type has at least one graded assessment.
  */
 export function computeFinalGrade(params: {
   grades: Grade[];
@@ -66,12 +68,13 @@ export function computeFinalGrade(params: {
     };
   });
 
-  const contributing = breakdown.filter((b) => b.weight > 0 && b.average !== null);
+  const required = breakdown.filter((b) => b.weight > 0);
+  const contributing = required.filter((b) => b.average !== null);
   const weightUsed = contributing.reduce((s, b) => s + b.weight, 0);
-  if (!contributing.length || weightUsed === 0) {
-    return { breakdown, final: null, weightUsed: 0 };
+  if (!required.length || contributing.length !== required.length || weightUsed === 0) {
+    return { breakdown, final: null, weightUsed };
   }
-  const final = contributing.reduce((s, b) => s + b.weight * (b.average as number), 0) / weightUsed;
+  const final = contributing.reduce((sum, b) => sum + b.weight * (b.average ?? 0), 0) / weightUsed;
   return { breakdown, final: round(final, precision), weightUsed };
 }
 

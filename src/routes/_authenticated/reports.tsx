@@ -88,7 +88,7 @@ function ReportsPage() {
           { key: "last_name", header: "Last name" },
           { key: "status", header: "Status" },
           { key: "average", header: "Average" },
-          { key: "final", header: "Final grade" },
+          { key: "final", header: "Final grade / 100" },
           { key: "attendance", header: "Attendance" },
         ],
         rows: students.map((s) => {
@@ -311,7 +311,7 @@ function ReportsPage() {
                 <TableRow>
                   <TableHead>Student</TableHead>
                   <TableHead className="text-right">Average</TableHead>
-                  <TableHead className="text-right">Final grade</TableHead>
+                  <TableHead className="text-right">Final grade / 100</TableHead>
                   <TableHead className="text-right">Attendance</TableHead>
                 </TableRow>
               </TableHeader>
@@ -390,7 +390,7 @@ function ReportsPage() {
                 value={a.studentAverage(activeStudent.id, activePeriod)}
               />
               <SummaryCell
-                label="Final grade"
+                label="Final grade / 100"
                 value={a.finalGrade(activeStudent.id, activePeriod).value}
               />
               <SummaryCell

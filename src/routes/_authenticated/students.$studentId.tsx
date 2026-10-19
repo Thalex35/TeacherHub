@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { attendanceStats } from "@/lib/calc";
+import { attendanceStats, FINAL_GRADE_SCALE } from "@/lib/calc";
 import { useAttendance } from "@/lib/data";
 import { formatDate, titleCase } from "@/lib/format";
 import { useAcademics } from "@/lib/useAcademics";
@@ -96,13 +96,22 @@ function StudentProfile() {
         />
         <Metric
           label="Final grade"
-          value={final?.value === null || final === null ? "—" : `${final.value}/${a.scale}`}
+          value={
+            final?.value === null || final === null ? "—" : `${final.value}/${FINAL_GRADE_SCALE}`
+          }
           {...(final?.overridden ? { hint: "Overridden" } : {})}
         />
         <Metric label="Attendance" value={att.rate === null ? "—" : `${att.rate}%`} />
       </div>
 
-      {final ? (
+      {final?.value === null ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          The final grade will appear after each evaluation type with a weight above 0 has at least
+          one recorded grade.
+        </p>
+      ) : null}
+
+      {final?.value !== null && final ? (
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold">Final grade breakdown — {currentPeriod?.name}</h2>
           <div className="surface overflow-x-auto">
@@ -122,7 +131,7 @@ function StudentProfile() {
                     <TableCell className="numeric text-right">{b.weight}%</TableCell>
                     <TableCell className="numeric text-right">{b.count}</TableCell>
                     <TableCell className="numeric text-right">
-                      {b.average === null ? "—" : `${b.average}/${a.scale}`}
+                      {b.average === null ? "—" : `${b.average}/${FINAL_GRADE_SCALE}`}
                     </TableCell>
                   </TableRow>
                 ))}

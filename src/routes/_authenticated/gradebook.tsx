@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { FINAL_GRADE_SCALE } from "@/lib/calc";
 import { useRemove, useUpsert } from "@/lib/data";
 import { formatDate } from "@/lib/format";
 import type { Assessment } from "@/lib/types";
@@ -74,7 +75,7 @@ function Gradebook() {
       (o) => o.student_id === studentId && o.period_id === activePeriod,
     );
     const input = window.prompt(
-      `Override final grade for ${name} (0–${a.scale}). Leave empty to remove the override.`,
+      `Override final grade for ${name} (0–${FINAL_GRADE_SCALE}). Leave empty to remove the override.`,
       current ? String(current.value) : "",
     );
     if (input === null) return;
@@ -86,8 +87,8 @@ function Gradebook() {
       return;
     }
     const value = Number(input);
-    if (Number.isNaN(value) || value < 0 || value > a.scale)
-      { toast.error(`Enter a value between 0 and ${a.scale}.`); return; }
+    if (Number.isNaN(value) || value < 0 || value > FINAL_GRADE_SCALE)
+      { toast.error(`Enter a value between 0 and ${FINAL_GRADE_SCALE}.`); return; }
     await upsertOverride.mutateAsync({ student_id: studentId, period_id: activePeriod, value });
     toast.success("Final grade overridden.");
   };
@@ -96,7 +97,7 @@ function Gradebook() {
     <div>
       <PageHeader
         title="Gradebook"
-        description="Averages and final grades are calculated automatically from your grading rules."
+        description="Averages use the grading scale in Settings. Final grades are out of 100 and appear once every weighted evaluation type has a grade."
       />
 
       <FilterBar>
@@ -168,8 +169,8 @@ function Gradebook() {
                     </button>
                   </TableHead>
                 ))}
-                <TableHead className="text-right">Average</TableHead>
-                <TableHead className="text-right">Final</TableHead>
+                <TableHead className="text-right">Average / {a.scale}</TableHead>
+                <TableHead className="text-right">Final / 100</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -195,6 +196,12 @@ function Gradebook() {
                       <button
                         className="numeric inline-flex items-center gap-2 hover:underline"
                         onClick={() => override(s.id, `${s.first_name} ${s.last_name}`)}
+                        disabled={final?.value === null || final === null}
+                        title={
+                          final?.value === null || final === null
+                            ? "Final grade appears after all weighted evaluation types have a grade."
+                            : undefined
+                        }
                       >
                         {final?.value === null || final === null ? "—" : final.value}
                         {final?.overridden ? (

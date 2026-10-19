@@ -464,7 +464,9 @@ function SettingsPage() {
                 {weightPeriodId === DEFAULT_WEIGHT_PERIOD
                   ? "Defaults apply to periods without their own saved weights."
                   : "Saving these weights changes grades for this period only."}{" "}
-                Weights must total 100%.
+                Weights must total 100%. Scores in each evaluation type are averaged before the
+                percentage weight is applied. The final grade is out of 100 and appears once every
+                type with a weight above 0 has at least one recorded grade.
               </p>
               {(types.data ?? []).map((t) => (
                 <div key={t.id} className="flex items-center gap-3">

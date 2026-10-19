@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { computeFinalGrade, normalise, avg, round } from "./calc";
+import { computeFinalGrade, FINAL_GRADE_SCALE, normalise, avg, round } from "./calc";
 import {
   useAssessments,
   useClasses,
@@ -98,16 +98,17 @@ export function useAcademics() {
         assessments: periodAssessments,
         types: types.data ?? [],
         weights: [...effectiveWeights.values()],
-        scale,
+        scale: FINAL_GRADE_SCALE,
         precision,
       });
       const override = (overrides.data ?? []).find(
         (o) => o.student_id === studentId && o.period_id === periodId,
       );
+      const isComplete = result.final !== null;
       return {
         ...result,
-        overridden: Boolean(override),
-        value: override ? Number(override.value) : result.final,
+        overridden: isComplete && Boolean(override),
+        value: isComplete ? (override ? Number(override.value) : result.final) : null,
       };
     };
 
