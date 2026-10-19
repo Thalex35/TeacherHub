@@ -59,6 +59,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
 
+const DEFAULT_WEIGHT_PERIOD = "default";
+
 function SettingsPage() {
   const settings = useSettings();
   const years = useYears();
@@ -136,23 +138,30 @@ function SettingsPage() {
   };
 
   // Grade weights (global defaults: period_id null)
+  const [weightPeriodId, setWeightPeriodId] = useState(DEFAULT_WEIGHT_PERIOD);
   const [weightDraft, setWeightDraft] = useState<Record<string, string>>({});
   useEffect(() => {
     const next: Record<string, string> = {};
     for (const t of types.data ?? []) {
-      const w = (weights.data ?? []).find(
-        (x) => x.evaluation_type_id === t.id && x.period_id === null,
-      );
+      const periodWeight =
+        weightPeriodId === DEFAULT_WEIGHT_PERIOD
+          ? undefined
+          : (weights.data ?? []).find(
+              (x) => x.evaluation_type_id === t.id && x.period_id === weightPeriodId,
+            );
+      const w =
+        periodWeight ??
+        (weights.data ?? []).find((x) => x.evaluation_type_id === t.id && x.period_id === null);
       next[t.id] = String(w ? Number(w.weight) : 0);
     }
     setWeightDraft(next);
-  }, [types.data, weights.data]);
+  }, [types.data, weights.data, weightPeriodId]);
 
   const weightTotal = Object.values(weightDraft).reduce((a, b) => a + (Number(b) || 0), 0);
 
   const saveWeights = async () => {
     const rows = (types.data ?? []).map((t) => ({
-      period_id: null,
+      period_id: weightPeriodId === DEFAULT_WEIGHT_PERIOD ? null : weightPeriodId,
       evaluation_type_id: t.id,
       weight: Number(weightDraft[t.id]) || 0,
     }));
@@ -431,10 +440,32 @@ function SettingsPage() {
             <CardHeader>
               <CardTitle>Grading weights</CardTitle>
               <CardDescription>
-                Weight of each evaluation type in the final grade. Must total 100.
+                Set default weights or customize the grading weights for an academic period.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="max-w-sm space-y-1.5">
+                <Label>Apply weights to</Label>
+                <Select value={weightPeriodId} onValueChange={setWeightPeriodId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={DEFAULT_WEIGHT_PERIOD}>Default weights</SelectItem>
+                    {(periods.data ?? []).map((period) => (
+                      <SelectItem key={period.id} value={period.id}>
+                        {period.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {weightPeriodId === DEFAULT_WEIGHT_PERIOD
+                  ? "Defaults apply to periods without their own saved weights."
+                  : "Saving these weights changes grades for this period only."}{" "}
+                Weights must total 100%.
+              </p>
               {(types.data ?? []).map((t) => (
                 <div key={t.id} className="flex items-center gap-3">
                   <span className="flex-1 text-sm">{t.name}</span>

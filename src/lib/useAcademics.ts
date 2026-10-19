@@ -83,13 +83,21 @@ export function useAcademics() {
     const finalGrade = (studentId: string, periodId: string) => {
       const periodAssessments = allAssessments.filter((a) => a.period_id === periodId);
       const ids = new Set(periodAssessments.map((a) => a.id));
+      const effectiveWeights = new Map(
+        (weights.data ?? [])
+          .filter((weight) => weight.period_id === null)
+          .map((weight) => [weight.evaluation_type_id, weight]),
+      );
+      for (const weight of weights.data ?? []) {
+        if (weight.period_id === periodId) {
+          effectiveWeights.set(weight.evaluation_type_id, weight);
+        }
+      }
       const result = computeFinalGrade({
         grades: allGrades.filter((g) => g.student_id === studentId && ids.has(g.assessment_id)),
         assessments: periodAssessments,
         types: types.data ?? [],
-        weights: (weights.data ?? []).filter(
-          (w) => w.period_id === null || w.period_id === periodId,
-        ),
+        weights: [...effectiveWeights.values()],
         scale,
         precision,
       });
