@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardList,
   FileBarChart,
+  FileText,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
@@ -38,6 +39,7 @@ const MANAGEMENT_NAV = [
   { to: "/curriculum", key: "curriculum", icon: BookOpen },
   { to: "/planner", key: "planner", icon: NotebookPen },
   { to: "/assignments", key: "assignments", icon: ClipboardList },
+  { to: "/teacher-control-sheet", key: "teacherControlSheet", icon: FileText },
   { to: "/gradebook", key: "gradebook", icon: Table2 },
   { to: "/evaluations", key: "evaluations", icon: ListChecks },
   { to: "/reports", key: "reports", icon: FileBarChart },
@@ -55,7 +57,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const theme = localStorage.getItem("teacherhub-user-theme");
-    const dark = theme === "dark" || (theme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const dark =
+      theme === "dark" ||
+      (theme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     document.documentElement.classList.toggle("dark", dark);
     void supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
@@ -206,7 +210,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-
     </div>
   );
 }

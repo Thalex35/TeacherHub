@@ -30,6 +30,7 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
+import { Route as AuthenticatedTeacherControlSheetRouteImport } from './routes/_authenticated/teacher-control-sheet'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAccessRequestsRouteImport } from './routes/admin.access-requests'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
@@ -147,6 +148,12 @@ const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTeacherControlSheetRoute =
+  AuthenticatedTeacherControlSheetRouteImport.update({
+    id: '/teacher-control-sheet',
+    path: '/teacher-control-sheet',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -221,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/teacher-control-sheet': typeof AuthenticatedTeacherControlSheetRoute
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/feature-requests': typeof AdminFeatureRequestsRoute
@@ -252,6 +260,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/teacher-control-sheet': typeof AuthenticatedTeacherControlSheetRoute
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/feature-requests': typeof AdminFeatureRequestsRoute
@@ -285,6 +294,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
+  '/_authenticated/teacher-control-sheet': typeof AuthenticatedTeacherControlSheetRoute
   '/admin/access-requests': typeof AdminAccessRequestsRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/feature-requests': typeof AdminFeatureRequestsRoute
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/students'
+    | '/teacher-control-sheet'
     | '/admin/access-requests'
     | '/admin/analytics'
     | '/admin/feature-requests'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/students'
+    | '/teacher-control-sheet'
     | '/admin/access-requests'
     | '/admin/analytics'
     | '/admin/feature-requests'
@@ -382,6 +394,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/students'
+    | '/_authenticated/teacher-control-sheet'
     | '/admin/access-requests'
     | '/admin/analytics'
     | '/admin/feature-requests'
@@ -553,6 +566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudentsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/teacher-control-sheet': {
+      id: '/_authenticated/teacher-control-sheet'
+      path: '/teacher-control-sheet'
+      fullPath: '/teacher-control-sheet'
+      preLoaderRoute: typeof AuthenticatedTeacherControlSheetRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -665,6 +685,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
+  AuthenticatedTeacherControlSheetRoute: typeof AuthenticatedTeacherControlSheetRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -682,6 +703,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
+  AuthenticatedTeacherControlSheetRoute: AuthenticatedTeacherControlSheetRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
