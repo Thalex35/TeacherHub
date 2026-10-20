@@ -81,3 +81,5 @@ for each row execute function public.validate_teacher_control_session_owner();
 create trigger teacher_control_sessions_set_updated_at
 before update on public.teacher_control_sessions
 for each row execute function public.set_updated_at();
+
+notify pgrst, 'reload schema';

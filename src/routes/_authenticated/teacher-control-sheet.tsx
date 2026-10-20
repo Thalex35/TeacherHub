@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { useClasses, useLessons, useSubjects, useTeachers } from "@/lib/data";
+import { useClasses, useLessons, useSettings, useSubjects, useTeachers } from "@/lib/data";
 import {
   exportTeacherControlSheetPdf,
   type TeacherControlSessionPdfEntry,
@@ -87,6 +87,7 @@ function TeacherControlSheetPage() {
   const classesQuery = useClasses();
   const subjectsQuery = useSubjects();
   const lessonsQuery = useLessons();
+  const settingsQuery = useSettings();
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [teacherId, setTeacherId] = useState("");
@@ -172,7 +173,21 @@ function TeacherControlSheetPage() {
         .eq("month", monthValue)
         .order("session_date", { ascending: true })
         .order("entry_time", { ascending: true });
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (
+          error.code === "PGRST205" ||
+          error.message
+            .toLowerCase()
+            .includes(
+              "could not find the table 'public.teacher_control_sessions' in the schema cache",
+            )
+        ) {
+          throw new Error(
+            "The teacher control sessions table is not configured. Ask a Supabase project administrator to apply migration 20261019160000_teacher_control_sessions.sql.",
+          );
+        }
+        throw new Error(error.message);
+      }
       return (data ?? []) as TeacherControlSession[];
     },
     enabled: Boolean(teacherId && classId && subjectId && monthValue),
@@ -303,6 +318,19 @@ function TeacherControlSheetPage() {
       toast.error("Select a teacher, class and subject before exporting.");
       return;
     }
+    if (settingsQuery.isLoading) {
+      toast.error("Wait for the teacher name in Settings to finish loading.");
+      return;
+    }
+    if (settingsQuery.isError) {
+      toast.error(settingsQuery.error.message);
+      return;
+    }
+    const teacherName = settingsQuery.data?.teacher_name.trim();
+    if (!teacherName) {
+      toast.error("Enter the teacher name in Settings before exporting.");
+      return;
+    }
     if (sessionsFailed) {
       toast.error(
         "Saved sessions could not be loaded. Resolve the loading error before exporting.",
@@ -334,7 +362,7 @@ function TeacherControlSheetPage() {
     setExporting(true);
     try {
       await exportTeacherControlSheetPdf({
-        teacherName: selectedTeacher.full_name,
+        teacherName,
         className: selectedClass.name,
         subjectName: selectedSubject.name,
         monthLabel,
