@@ -1,0 +1,13 @@
+.git
+.vercel
+node_modules
+.output
+dist
+dist-ssr
+release
+release-electron
+release-electron-*
+*.log
+.env
+.env.*
+!.env.example
