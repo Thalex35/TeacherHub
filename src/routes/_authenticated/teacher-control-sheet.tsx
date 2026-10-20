@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { useClasses, useLessons, useSettings, useSubjects, useTeachers } from "@/lib/data";
+import { useClasses, useSettings, useSubjects, useTeachers, useUnits } from "@/lib/data";
 import {
   exportTeacherControlSheetPdf,
   type TeacherControlSessionPdfEntry,
@@ -86,7 +86,7 @@ function TeacherControlSheetPage() {
   const teachersQuery = useTeachers();
   const classesQuery = useClasses();
   const subjectsQuery = useSubjects();
-  const lessonsQuery = useLessons();
+  const unitsQuery = useUnits();
   const settingsQuery = useSettings();
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -193,12 +193,9 @@ function TeacherControlSheetPage() {
     enabled: Boolean(teacherId && classId && subjectId && monthValue),
   });
 
-  const lessonSuggestions = useMemo(
-    () =>
-      (lessonsQuery.data ?? []).filter(
-        (lesson) => lesson.class_id === classId && lesson.title && lesson.objectives,
-      ),
-    [classId, lessonsQuery.data],
+  const unitSuggestions = useMemo(
+    () => (unitsQuery.data ?? []).filter((unit) => unit.class_id === classId && unit.is_active),
+    [classId, unitsQuery.data],
   );
 
   const sortedSessions = [...sessions].sort(
@@ -222,13 +219,13 @@ function TeacherControlSheetPage() {
     setDraft((current) => ({ ...current, [field]: value }));
   };
 
-  const onLessonSuggestion = (value: string) => {
-    const lesson = lessonSuggestions.find((item) => item.id === value);
-    if (!lesson) return;
+  const onUnitSuggestion = (value: string) => {
+    const unit = unitSuggestions.find((item) => item.id === value);
+    if (!unit) return;
     setDraft((current) => ({
       ...current,
-      theme: lesson.title,
-      objectives: lesson.objectives ?? current.objectives,
+      theme: unit.title,
+      objectives: unit.description ?? current.objectives,
     }));
   };
 
@@ -364,7 +361,7 @@ function TeacherControlSheetPage() {
       await exportTeacherControlSheetPdf({
         teacherName,
         className: selectedClass.name,
-        subjectName: selectedSubject.name,
+        subjectName: "Informatique",
         monthLabel,
         sessions: sessionsForPdf,
       });
@@ -483,16 +480,16 @@ function TeacherControlSheetPage() {
           </div>
 
           <div>
-            <Label>Leçon prévue (facultatif)</Label>
+            <Label>Unité prévue (facultatif)</Label>
             <select
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value=""
-              onChange={(event) => onLessonSuggestion(event.target.value)}
+              onChange={(event) => onUnitSuggestion(event.target.value)}
             >
-              <option value="">Choisir une leçon pour préremplir le thème et les objectifs</option>
-              {lessonSuggestions.map((lesson) => (
-                <option key={lesson.id} value={lesson.id}>
-                  {lesson.title}
+              <option value="">Choisir une unité pour préremplir le thème et les objectifs</option>
+              {unitSuggestions.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.title}
                 </option>
               ))}
             </select>

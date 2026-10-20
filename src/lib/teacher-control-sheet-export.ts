@@ -24,7 +24,7 @@ export type TeacherControlSheetPdfInput = {
   sessions: TeacherControlSessionPdfEntry[];
 };
 
-const SCHOOL_NAME = "ECOLE SECONDAIRE D'EN HAUT DES PUITS SALES";
+const SCHOOL_NAME = "ECOLE SECOURS D'EN HAUT DE PUITS SALES";
 const MARGIN = 8;
 const TABLE_TOP = 49;
 const HEADER_HEIGHT = 14;
@@ -38,7 +38,7 @@ const HEADERS = [
   "Heures de sortie",
   "Thème",
   "Objectifs",
-  "Devoir/leçon",
+  "Devoir / leçon",
   "Remarques/Observations",
 ];
 const CELL_LABELS = [
@@ -48,7 +48,7 @@ const CELL_LABELS = [
   "Heures de sortie",
   "Thème",
   "Objectifs",
-  "Devoir/leçon",
+  "Devoir / leçon",
   "Remarques/Observations",
 ];
 
@@ -111,13 +111,13 @@ function drawHeader(pdf: jsPDF, input: TeacherControlSheetPdfInput) {
 
   const innerWidth = pageWidth - MARGIN * 2;
   const half = innerWidth / 2;
-  writeField("Nom de :", surname, MARGIN, 31, half - 5);
-  writeField("Prenom :", firstName, MARGIN + half + 5, 31, half - 5);
-
   const thirds = innerWidth / 3;
+  writeField("Prénom :", firstName, MARGIN, 31, thirds - 4);
+  writeField("Nom :", surname, MARGIN + thirds, 31, thirds - 4);
+  writeField("Cours :", "Informatique", MARGIN + thirds * 2, 31, thirds - 4);
+
   writeField("Mois de :", input.monthLabel, MARGIN, 40, thirds - 4);
   writeField("Classe :", input.className, MARGIN + thirds, 40, thirds - 4);
-  writeField("Cours :", input.subjectName, MARGIN + thirds * 2, 40, thirds - 4);
 }
 
 function sessionCells(session: TeacherControlSessionPdfEntry | undefined, rowNumber: number) {
@@ -214,11 +214,13 @@ function drawOverflowPages(
     pdf.setTextColor(0, 0, 0);
     pdf.setFont("TeacherHubSans", "bold");
     pdf.setFontSize(13);
-    pdf.text("Fiche de contrôle des Professeurs — suite", pageWidth / 2, 15, { align: "center" });
+    pdf.text("Fiche de contrôle des professeurs — suite", pageWidth / 2, 15, {
+      align: "center",
+    });
     pdf.setFont("TeacherHubSans", "normal");
     pdf.setFontSize(9);
     pdf.text(
-      `${input.teacherName} · ${input.className} · ${input.subjectName} · ${input.monthLabel}`,
+      `Professeur : ${input.teacherName} · Classe : ${input.className} · Cours : Informatique · Mois : ${input.monthLabel}`,
       pageWidth / 2,
       22,
       { align: "center" },
