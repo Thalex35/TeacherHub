@@ -211,15 +211,33 @@ function TeacherControlSheetPage() {
     [classId, unitsQuery.data],
   );
 
-  const sortedSessions = [...sessions].sort(
-    (a, b) =>
-      a.session_date.localeCompare(b.session_date) || a.entry_time.localeCompare(b.entry_time),
+  const sortedSessions = useMemo(
+    () =>
+      [...sessions].sort(
+        (a, b) =>
+          a.week_number - b.week_number ||
+          a.session_date.localeCompare(b.session_date) ||
+          a.entry_time.localeCompare(b.entry_time),
+      ),
+    [sessions],
   );
+  const sessionsByWeek = useMemo(() => {
+    const grouped = new Map<number, TeacherControlSession[]>();
+    for (const session of sortedSessions) {
+      const weekSessions = grouped.get(session.week_number) ?? [];
+      weekSessions.push(session);
+      grouped.set(session.week_number, weekSessions);
+    }
+    return grouped;
+  }, [sortedSessions]);
 
+  const completedWeekCount = [...sessionsByWeek.keys()].filter(
+    (weekNumber) => weekNumber >= 1 && weekNumber <= 5,
+  ).length;
   const completionState =
-    sortedSessions.length === 0
+    completedWeekCount === 0
       ? "Not started"
-      : sortedSessions.length >= 5
+      : completedWeekCount >= 5
         ? "Completed"
         : "In progress";
 
@@ -657,24 +675,48 @@ function TeacherControlSheetPage() {
           </TableHeader>
           <TableBody>
             {Array.from({ length: 5 }, (_, index) => {
-              const session = sortedSessions[index] ?? null;
+              const weekSessions = sessionsByWeek.get(index + 1) ?? [];
               return (
                 <TableRow key={`slot-${index}`}>
-                  <TableCell>{session ? session.week_number : index + 1}</TableCell>
-                  <TableCell>{session?.session_date ?? ""}</TableCell>
-                  <TableCell>{session?.entry_time ?? ""}</TableCell>
-                  <TableCell>{session?.exit_time ?? ""}</TableCell>
-                  <TableCell>{session?.theme ?? ""}</TableCell>
-                  <TableCell>{session?.objectives ?? ""}</TableCell>
+                  <TableCell>{index + 1}</TableCell>
                   <TableCell>
-                    {session ? (
-                      <>
+                    {weekSessions.map((session) => (
+                      <div key={session.id}>{session.session_date}</div>
+                    ))}
+                  </TableCell>
+                  <TableCell>
+                    {weekSessions.map((session) => (
+                      <div key={session.id}>{session.entry_time}</div>
+                    ))}
+                  </TableCell>
+                  <TableCell>
+                    {weekSessions.map((session) => (
+                      <div key={session.id}>{session.exit_time}</div>
+                    ))}
+                  </TableCell>
+                  <TableCell>
+                    {weekSessions.map((session) => (
+                      <div key={session.id}>{session.theme}</div>
+                    ))}
+                  </TableCell>
+                  <TableCell>
+                    {weekSessions.map((session) => (
+                      <div key={session.id}>{session.objectives}</div>
+                    ))}
+                  </TableCell>
+                  <TableCell>
+                    {weekSessions.map((session) => (
+                      <div key={session.id}>
                         <div>{session.devoir_title || ""}</div>
                         {session.devoir_date ? <div>{session.devoir_date}</div> : null}
-                      </>
-                    ) : null}
+                      </div>
+                    ))}
                   </TableCell>
-                  <TableCell>{session?.remarks ?? ""}</TableCell>
+                  <TableCell>
+                    {weekSessions.map((session) => (
+                      <div key={session.id}>{session.remarks ?? ""}</div>
+                    ))}
+                  </TableCell>
                 </TableRow>
               );
             })}
