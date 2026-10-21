@@ -107,9 +107,12 @@ function TeacherControlSheetPage() {
     () =>
       (teachersQuery.data ?? []).map((teacher) => ({
         value: teacher.id,
-        label: teacher.full_name,
+        label:
+          teacher.user_id === currentUserId && settingsQuery.data?.teacher_name.trim()
+            ? settingsQuery.data.teacher_name.trim()
+            : teacher.full_name,
       })),
-    [teachersQuery.data],
+    [currentUserId, settingsQuery.data?.teacher_name, teachersQuery.data],
   );
 
   useEffect(() => {

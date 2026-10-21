@@ -121,7 +121,7 @@ function drawHeader(pdf: jsPDF, input: TeacherControlSheetPdfInput) {
 }
 
 function sessionCells(session: TeacherControlSessionPdfEntry | undefined, rowNumber: number) {
-  if (!session) return [String(rowNumber), "", "", "", "", "", "Titre :\nDate de Remise :", ""];
+  if (!session) return [String(rowNumber), "", "", "", "", "", "Titre :\n\nDate de remise :", ""];
   return [
     String(session.week_number || rowNumber),
     formatDate(session.session_date),
@@ -129,7 +129,7 @@ function sessionCells(session: TeacherControlSessionPdfEntry | undefined, rowNum
     safeText(session.exit_time),
     safeText(session.theme),
     safeText(session.objectives),
-    `Titre : ${safeText(session.devoir_title)}\nDate de Remise : ${formatDate(session.devoir_date ?? "")}`,
+    `Titre : ${safeText(session.devoir_title)}\n\nDate de remise : ${formatDate(session.devoir_date ?? "")}`,
     safeText(session.remarks),
   ];
 }
@@ -268,13 +268,37 @@ export async function createTeacherControlSheetPdf(input: TeacherControlSheetPdf
   pdf.addFileToVFS("TeacherHubSans-Bold.ttf", boldFont);
   pdf.addFont("TeacherHubSans-Bold.ttf", "TeacherHubSans", "bold");
   const overflow: OverflowEntry[] = [];
-  const pages = Math.max(1, Math.ceil(input.sessions.length / ROWS_PER_FORM));
+  const firstPageSessions: (TeacherControlSessionPdfEntry | undefined)[] = Array.from(
+    { length: ROWS_PER_FORM },
+    () => undefined,
+  );
+  const overflowSessions: TeacherControlSessionPdfEntry[] = [];
+
+  for (const session of [...input.sessions].sort(
+    (a, b) =>
+      a.week_number - b.week_number ||
+      a.session_date.localeCompare(b.session_date) ||
+      a.entry_time.localeCompare(b.entry_time),
+  )) {
+    const weekIndex = session.week_number - 1;
+    if (weekIndex >= 0 && weekIndex < ROWS_PER_FORM && !firstPageSessions[weekIndex]) {
+      firstPageSessions[weekIndex] = session;
+    } else {
+      overflowSessions.push(session);
+    }
+  }
+
+  const pages = 1 + Math.ceil(overflowSessions.length / ROWS_PER_FORM);
 
   for (let page = 0; page < pages; page += 1) {
     if (page > 0) pdf.addPage();
     const start = page * ROWS_PER_FORM;
-    const pageSessions = input.sessions.slice(start, start + ROWS_PER_FORM);
-    const paddedSessions = Array.from({ length: ROWS_PER_FORM }, (_, index) => pageSessions[index]);
+    const pageSessions =
+      page === 0 ? firstPageSessions : overflowSessions.slice(start - ROWS_PER_FORM, start);
+    const paddedSessions =
+      pageSessions.length === ROWS_PER_FORM
+        ? pageSessions
+        : Array.from({ length: ROWS_PER_FORM }, (_, index) => pageSessions[index]);
     drawFormPage(pdf, input, paddedSessions, start + 1, overflow);
   }
 
