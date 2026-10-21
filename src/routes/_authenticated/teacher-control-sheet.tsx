@@ -90,6 +90,7 @@ function TeacherControlSheetPage() {
   const settingsQuery = useSettings();
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const [teacherId, setTeacherId] = useState("");
   const [classId, setClassId] = useState("");
   const [subjectId, setSubjectId] = useState("");
@@ -100,31 +101,40 @@ function TeacherControlSheetPage() {
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+    void supabase.auth.getUser().then(({ data, error }) => {
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setCurrentUserId(data.user?.id ?? null);
+      setAuthLoaded(true);
+    });
   }, []);
 
+  const teachers = teachersQuery.data;
+  const currentTeacher =
+    teachers?.find((teacher) => teacher.user_id === currentUserId) ??
+    (authLoaded ? teachers?.[0] : undefined);
+  const configuredTeacherName = settingsQuery.data?.teacher_name.trim();
   const teacherOptions = useMemo(
     () =>
-      (teachersQuery.data ?? []).map((teacher) => ({
+      (teachers ?? []).map((teacher) => ({
         value: teacher.id,
         label:
-          teacher.user_id === currentUserId && settingsQuery.data?.teacher_name.trim()
-            ? settingsQuery.data.teacher_name.trim()
+          teacher.id === currentTeacher?.id && configuredTeacherName
+            ? configuredTeacherName
             : teacher.full_name,
       })),
-    [currentUserId, settingsQuery.data?.teacher_name, teachersQuery.data],
+    [configuredTeacherName, currentTeacher?.id, teachers],
   );
 
   useEffect(() => {
-    if (!teacherId && teacherOptions.length) {
+    if (!teacherId && authLoaded && teacherOptions.length) {
       const selectedTeacher =
-        teacherOptions.find((option) => {
-          const teacher = (teachersQuery.data ?? []).find((item) => item.id === option.value);
-          return teacher?.user_id === currentUserId;
-        }) ?? teacherOptions[0];
+        teacherOptions.find((option) => option.value === currentTeacher?.id) ?? teacherOptions[0];
       if (selectedTeacher) setTeacherId(selectedTeacher.value);
     }
-  }, [currentUserId, teacherId, teacherOptions, teachersQuery.data]);
+  }, [authLoaded, currentTeacher?.id, teacherId, teacherOptions]);
 
   const selectedTeacher = (teachersQuery.data ?? []).find((item) => item.id === teacherId);
   const availableClasses = useMemo(
