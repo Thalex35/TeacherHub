@@ -41,7 +41,14 @@ export const Route = createFileRoute("/_authenticated/reports")({
   component: ReportsPage,
 });
 
-type ReportKind = "class_summary" | "report_card" | "attendance";
+type ReportKind = "class_summary" | "report_card" | "attendance" | "palmares";
+
+function formatFrenchDate(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+}
 
 function ReportsPage() {
   const a = useAcademics();
@@ -51,6 +58,7 @@ function ReportsPage() {
   const [classId, setClassId] = useState("");
   const [periodId, setPeriodId] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [assessmentId, setAssessmentId] = useState("");
   const [exporting, setExporting] = useState<string | null>(null);
 
   const activeClass = classId || a.classes[0]?.id || "";
@@ -60,14 +68,44 @@ function ReportsPage() {
   const activeStudent = students.find((s) => s.id === studentId) ?? students[0];
   const klass = a.classes.find((c) => c.id === activeClass);
   const period = a.periods.find((p) => p.id === activePeriod);
+  const palmaresAssessments = a.assessments
+    .filter(
+      (assessment) => assessment.class_id === activeClass && assessment.period_id === activePeriod,
+    )
+    .sort((left, right) => left.date.localeCompare(right.date));
+  const activeAssessment =
+    palmaresAssessments.find((assessment) => assessment.id === assessmentId) ??
+    palmaresAssessments[0];
   const rows = attendance.data ?? [];
+  const palmaresRows =
+    kind === "palmares"
+      ? students
+          .map((student) => ({
+            student,
+            final: a.finalGrade(student.id, activePeriod).value,
+          }))
+          .sort((left, right) => {
+            if (left.final === null) {
+              return right.final === null
+                ? fullName(left.student).localeCompare(fullName(right.student), "fr")
+                : 1;
+            }
+            if (right.final === null) return -1;
+            return (
+              right.final - left.final ||
+              fullName(left.student).localeCompare(fullName(right.student), "fr")
+            );
+          })
+      : [];
 
   const title =
     kind === "class_summary"
       ? "Class summary"
       : kind === "report_card"
         ? "Student report card"
-        : "Attendance report";
+        : kind === "attendance"
+          ? "Attendance report"
+          : "Palmarès";
   const reportMeta = {
     schoolName: a.settings?.school_name ?? "School",
     className: klass?.name ?? "—",
@@ -77,6 +115,30 @@ function ReportsPage() {
   };
 
   const buildReport = (): ExportReport => {
+    if (kind === "palmares" && activeAssessment) {
+      return {
+        title,
+        subtitle: "",
+        ...reportMeta,
+        schoolName: "",
+        date: formatFrenchDate(activeAssessment.date),
+        metadata: [
+          { label: "Contrôle", value: activeAssessment.title },
+          { label: "Professeur", value: a.settings?.teacher_name ?? "—" },
+          { label: "Date", value: formatFrenchDate(activeAssessment.date) },
+          { label: "Classe", value: klass?.name ?? "—" },
+        ],
+        columns: [
+          { key: "full_name", header: "Nom complet" },
+          { key: "final", header: "Note finale / 100" },
+        ],
+        rows: palmaresRows.map(({ student, final }) => ({
+          full_name: fullName(student),
+          final,
+        })),
+      };
+    }
+
     if (kind === "class_summary") {
       return {
         title,
@@ -196,17 +258,23 @@ function ReportsPage() {
   };
 
   const download = async (format: "pdf" | "csv" | "xlsx") => {
+    if (kind === "palmares" && !activeAssessment) {
+      toast.error("Aucun contrôle n’est disponible pour cette classe et cette période.");
+      return;
+    }
     const report = buildReport();
     if (!report.rows.length) {
       toast.error("No report data available to export.");
       return;
     }
     const subject =
-      kind === "report_card" && activeStudent
-        ? `report-card-${fullName(activeStudent)}-${klass?.name ?? "class"}`
-        : kind === "class_summary"
-          ? `class-summary-${klass?.name ?? "class"}`
-          : `attendance-report-${klass?.name ?? "class"}`;
+      kind === "palmares"
+        ? `palmares-${activeAssessment?.title ?? "classe"}-${klass?.name ?? "classe"}`
+        : kind === "report_card" && activeStudent
+          ? `report-card-${fullName(activeStudent)}-${klass?.name ?? "class"}`
+          : kind === "class_summary"
+            ? `class-summary-${klass?.name ?? "class"}`
+            : `attendance-report-${klass?.name ?? "class"}`;
     const key = `${kind}-${format}`;
     setExporting(key);
     try {
@@ -215,8 +283,12 @@ function ReportsPage() {
       else if (format === "csv") exportCsv(report, filename);
       else exportExcel(report, filename);
       toast.success(`${format.toUpperCase()} downloaded.`);
-    } catch {
-      toast.error(`Unable to generate ${format.toUpperCase()} report.`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Unable to generate ${format.toUpperCase()} report.`,
+      );
     } finally {
       setExporting(null);
     }
@@ -226,8 +298,12 @@ function ReportsPage() {
     <div>
       <div className="print:hidden">
         <PageHeader
-          title="Reports"
-          description="Generate a clean, printable document for any class, student or period."
+          title={kind === "palmares" ? "Palmarès" : "Reports"}
+          description={
+            kind === "palmares"
+              ? "Téléchargez le palmarès de la classe en PDF, Excel ou CSV."
+              : "Generate a clean, printable document for any class, student or period."
+          }
           actions={
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => window.print()}>
@@ -263,6 +339,7 @@ function ReportsPage() {
               { value: "class_summary", label: "Class summary" },
               { value: "report_card", label: "Student report card" },
               { value: "attendance", label: "Attendance report" },
+              { value: "palmares", label: "Palmarès" },
             ]}
           />
           <FilterSelect
@@ -279,6 +356,18 @@ function ReportsPage() {
             includeAll={false}
             options={a.periods.map((p) => ({ value: p.id, label: p.name }))}
           />
+          {kind === "palmares" ? (
+            <FilterSelect
+              label="Contrôle"
+              value={activeAssessment?.id ?? ""}
+              onChange={setAssessmentId}
+              includeAll={false}
+              options={palmaresAssessments.map((assessment) => ({
+                value: assessment.id,
+                label: `${assessment.title} · ${formatFrenchDate(assessment.date)}`,
+              }))}
+            />
+          ) : null}
           {kind === "report_card" ? (
             <FilterSelect
               label="Student"
@@ -294,14 +383,47 @@ function ReportsPage() {
 
       <div className="surface p-6 print:border-0 print:p-0 print:shadow-none">
         <header className="mb-6 border-b border-border pb-4">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            {a.settings?.school_name ?? "School"}
-          </p>
-          <h2 className="font-display text-2xl font-semibold">{title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {klass?.name} · {period?.name} · Teacher: {a.settings?.teacher_name ?? "—"} ·{" "}
-            {formatDate(new Date().toISOString().slice(0, 10))}
-          </p>
+          {kind === "palmares" ? (
+            <>
+              <h2 className="font-display text-2xl font-semibold">Palmarès</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Contrôle : {activeAssessment?.title ?? "—"} · Professeur :{" "}
+                {a.settings?.teacher_name ?? "—"} · Date :{" "}
+                {activeAssessment ? formatFrenchDate(activeAssessment.date) : "—"} · Classe :{" "}
+                {klass?.name ?? "—"}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                {a.settings?.school_name ?? "School"}
+              </p>
+              <h2 className="font-display text-2xl font-semibold">{title}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {klass?.name} · {period?.name} · Teacher: {a.settings?.teacher_name ?? "—"} ·{" "}
+                {formatDate(new Date().toISOString().slice(0, 10))}
+              </p>
+            </>
+          )}
+
+          {kind === "palmares" ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom complet</TableHead>
+                  <TableHead className="text-right">Note finale / 100</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {palmaresRows.map(({ student, final }) => (
+                  <TableRow key={student.id}>
+                    <TableCell>{fullName(student)}</TableCell>
+                    <TableCell className="numeric text-right">{final ?? "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : null}
         </header>
 
         {kind === "class_summary" ? (
