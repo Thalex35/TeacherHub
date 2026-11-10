@@ -98,113 +98,86 @@ export function exportPdf(report: ExportReport, filename: string) {
   const pageHeight = pdf.internal.pageSize.getHeight();
   const usableWidth = pageWidth - margin * 2;
   const columnWidth = usableWidth / report.columns.length;
-  const colors = {
-    ink: [24, 45, 67] as const,
-    accent: [28, 145, 140] as const,
-    pale: [241, 246, 247] as const,
-    line: [214, 226, 229] as const,
-    muted: [91, 108, 119] as const,
-  };
   let y = 14;
 
-  const drawHeader = () => {
-    pdf.setFillColor(...colors.ink);
-    pdf.roundedRect(margin, y, usableWidth, 34, 3, 3, "F");
-    pdf.setFillColor(...colors.accent);
-    pdf.roundedRect(margin, y, 5, 34, 3, 3, "F");
-    pdf.setTextColor(255, 255, 255);
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(16);
+  pdf.text(report.title, margin, y);
+  y += 10;
+
+  if (report.subtitle) {
+    pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
-    pdf.setFont("helvetica", "bold");
-    pdf.text(report.schoolName.toUpperCase(), margin + 10, y + 10);
-    pdf.setFontSize(17);
-    pdf.text(report.title, margin + 10, y + 21);
+    pdf.text(report.subtitle, margin, y, { maxWidth: usableWidth });
+    y += 7;
+  }
+
+  const metadata = report.metadata
+    ? report.metadata.map(({ label, value }) => [label, value])
+    : [
+        ["Classe", report.className],
+        ["Contrôle", String(report.control)],
+        ["Professeur", report.teacherName],
+        ["Date", report.date],
+      ];
+  const metadataColumnWidth = usableWidth / 2;
+  metadata.forEach(([label, value], index) => {
+    const column = index % 2;
+    const x = margin + column * metadataColumnWidth;
+    const labelWidth = 22;
+    const lines = pdf.splitTextToSize(String(value), metadataColumnWidth - labelWidth - 3);
     pdf.setFontSize(8);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(`${label}:`, x, y);
     pdf.setFont("helvetica", "normal");
-    pdf.text(report.subtitle, margin + 10, y + 29);
-    pdf.setTextColor(...colors.ink);
-    y += 41;
+    pdf.text(lines, x + labelWidth, y);
+    if (column === 1 || index === metadata.length - 1) {
+      const rowLines =
+        column === 1
+          ? Math.max(
+              pdf.splitTextToSize(
+                String(metadata[index - 1]?.[1] ?? ""),
+                metadataColumnWidth - labelWidth - 3,
+              ).length,
+              lines.length,
+            )
+          : lines.length;
+      y += rowLines * 4 + 3;
+    }
+  });
 
-    pdf.setFillColor(...colors.pale);
-    pdf.setDrawColor(...colors.line);
-    pdf.roundedRect(margin, y, usableWidth, 22, 2, 2, "FD");
-    pdf.setFontSize(7);
-    pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(...colors.muted);
-    const metadata = report.metadata
-      ? report.metadata.map(({ label, value }) => [label, value])
-      : [
-          ["CLASS", report.className],
-          ["CONTROL", String(report.control)],
-          ["TEACHER", report.teacherName],
-          ["DATE", report.date],
-        ];
-    metadata.forEach(([label, value], index) => {
-      const x = margin + 8 + (index % 2) * (usableWidth * 0.5);
-      const metadataY = y + 8 + Math.floor(index / 2) * 9;
-      pdf.text(label, x, metadataY);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(...colors.ink);
-      pdf.text(value, x + 25, metadataY, { maxWidth: usableWidth * 0.5 - 35 });
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...colors.muted);
-    });
-    y += 31;
+  y += 3;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(9);
+  const headerLines = report.columns.map((column) =>
+    pdf.splitTextToSize(column.header, columnWidth - 4),
+  );
+  const headerHeight = Math.max(...headerLines.map((lines) => lines.length), 1) * 4.5;
+  headerLines.forEach((lines, index) => pdf.text(lines, margin + index * columnWidth + 2, y));
+  y += headerHeight + 2;
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.3);
+  pdf.line(margin, y, margin + usableWidth, y);
+  y += 5;
 
-    pdf.setFillColor(...colors.ink);
-    pdf.roundedRect(margin, y - 5, usableWidth, 10, 1.5, 1.5, "F");
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8);
-    report.columns.forEach((column, index) => {
-      pdf.text(column.header, margin + index * columnWidth + 2, y + 1, {
-        maxWidth: columnWidth - 4,
-      });
-    });
-    pdf.setTextColor(...colors.ink);
-    pdf.setFont("helvetica", "normal");
-    y += 11;
-  };
-
-  const pageNumber = () => {
-    pdf.setFontSize(8);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, {
-      align: "right",
-    });
-    pdf.setTextColor(31, 41, 55);
-  };
-
-  drawHeader();
-  report.rows.forEach((row, rowIndex) => {
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  report.rows.forEach((row) => {
     const values = report.columns.map((column) => displayValue(row[column.key]));
     const lines = values.map((value) => pdf.splitTextToSize(value, columnWidth - 4));
-    const rowHeight = Math.max(...lines.map((value) => value.length), 1) * 4.5 + 6;
+    const rowHeight = Math.max(...lines.map((value) => value.length), 1) * 4.5 + 5;
     if (y + rowHeight > pageHeight - 14) {
-      pageNumber();
       pdf.addPage();
       y = 14;
-      drawHeader();
     }
-    if (rowIndex % 2 === 0) {
-      pdf.setFillColor(...colors.pale);
-      pdf.rect(margin, y - 4, usableWidth, rowHeight, "F");
-    }
-    pdf.setTextColor(...colors.ink);
     lines.forEach((value, index) =>
       pdf.text(value, margin + index * columnWidth + 2, y, { maxWidth: columnWidth - 4 }),
     );
-    pdf.setDrawColor(...colors.line);
-    pdf.line(margin, y + rowHeight - 3, margin + usableWidth, y + rowHeight - 3);
-    for (let index = 1; index < report.columns.length; index += 1) {
-      pdf.line(
-        margin + index * columnWidth,
-        y - 4,
-        margin + index * columnWidth,
-        y + rowHeight - 3,
-      );
-    }
+    pdf.setDrawColor(0, 0, 0);
+    pdf.setLineWidth(0.15);
+    pdf.line(margin, y + rowHeight - 2, margin + usableWidth, y + rowHeight - 2);
     y += rowHeight;
   });
-  pageNumber();
   pdf.save(filename);
 }
