@@ -101,6 +101,12 @@ export function exportPdf(report: ExportReport, filename: string) {
   let y = 14;
 
   pdf.setTextColor(0, 0, 0);
+  if (report.schoolName) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.text(report.schoolName, margin, y);
+    y += 7;
+  }
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(16);
   pdf.text(report.title, margin, y);
@@ -155,11 +161,7 @@ export function exportPdf(report: ExportReport, filename: string) {
   );
   const headerHeight = Math.max(...headerLines.map((lines) => lines.length), 1) * 4.5;
   headerLines.forEach((lines, index) => pdf.text(lines, margin + index * columnWidth + 2, y));
-  y += headerHeight + 2;
-  pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.3);
-  pdf.line(margin, y, margin + usableWidth, y);
-  y += 5;
+  y += headerHeight + 6;
 
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
@@ -174,9 +176,6 @@ export function exportPdf(report: ExportReport, filename: string) {
     lines.forEach((value, index) =>
       pdf.text(value, margin + index * columnWidth + 2, y, { maxWidth: columnWidth - 4 }),
     );
-    pdf.setDrawColor(0, 0, 0);
-    pdf.setLineWidth(0.15);
-    pdf.line(margin, y + rowHeight - 2, margin + usableWidth, y + rowHeight - 2);
     y += rowHeight;
   });
   pdf.save(filename);

@@ -109,7 +109,6 @@ function ReportsPage() {
         title,
         subtitle: "",
         ...reportMeta,
-        schoolName: "",
         date: generatedDate,
         metadata: [
           { label: "Contrôle", value: period?.name ?? "—" },
