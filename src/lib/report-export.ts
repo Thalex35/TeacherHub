@@ -12,6 +12,7 @@ export interface ExportReport {
   control: number;
   teacherName: string;
   date: string;
+  metadata?: { label: string; value: string }[];
   columns: { key: string; header: string }[];
   rows: ExportRow[];
 }
@@ -51,20 +52,29 @@ export function exportCsv(report: ExportReport, filename: string) {
   const body = report.rows
     .map((row) => report.columns.map((column) => csvValue(row[column.key])).join(","))
     .join("\r\n");
+  const metadata = report.metadata
+    ? [
+        csvValue(report.title),
+        ...report.metadata.map(({ label, value }) => `${csvValue(label)},${csvValue(value)}`),
+        "",
+      ].join("\r\n")
+    : "";
   downloadBlob(
-    new Blob(["\uFEFF", `${header}\r\n${body}\r\n`], { type: "text/csv;charset=utf-8" }),
+    new Blob(["\uFEFF", metadata, `${header}\r\n${body}\r\n`], {
+      type: "text/csv;charset=utf-8",
+    }),
     filename,
   );
 }
 
 export function exportExcel(report: ExportReport, filename: string) {
   if (!report.rows.length) throw new Error("No report data available to export.");
-  const rows = report.rows.map((row) =>
-    Object.fromEntries(report.columns.map((column) => [column.header, row[column.key] ?? ""])),
-  );
-  const sheet = XLSX.utils.json_to_sheet(rows, {
-    header: report.columns.map((column) => column.header),
-  });
+  const headers = report.columns.map((column) => column.header);
+  const data = report.rows.map((row) => report.columns.map((column) => row[column.key] ?? ""));
+  const metadataRows = report.metadata
+    ? [[report.title], ...report.metadata.map(({ label, value }) => [label, value]), [], headers]
+    : [headers];
+  const sheet = XLSX.utils.aoa_to_sheet([...metadataRows, ...data]);
   sheet["!cols"] = report.columns.map((column) => ({
     wch: Math.min(
       36,
@@ -74,7 +84,7 @@ export function exportExcel(report: ExportReport, filename: string) {
       ),
     ),
   }));
-  sheet["!freeze"] = { xSplit: 0, ySplit: 1 };
+  sheet["!freeze"] = { xSplit: 0, ySplit: metadataRows.length };
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, sheet, report.title.slice(0, 31));
   XLSX.writeFile(workbook, filename, { bookType: "xlsx" });
@@ -120,12 +130,14 @@ export function exportPdf(report: ExportReport, filename: string) {
     pdf.setFontSize(7);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(...colors.muted);
-    const metadata = [
-      ["CLASS", report.className],
-      ["CONTROL", String(report.control)],
-      ["TEACHER", report.teacherName],
-      ["DATE", report.date],
-    ];
+    const metadata = report.metadata
+      ? report.metadata.map(({ label, value }) => [label, value])
+      : [
+          ["CLASS", report.className],
+          ["CONTROL", String(report.control)],
+          ["TEACHER", report.teacherName],
+          ["DATE", report.date],
+        ];
     metadata.forEach(([label, value], index) => {
       const x = margin + 8 + (index % 2) * (usableWidth * 0.5);
       const metadataY = y + 8 + Math.floor(index / 2) * 9;
