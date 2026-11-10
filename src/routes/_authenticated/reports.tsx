@@ -43,13 +43,6 @@ export const Route = createFileRoute("/_authenticated/reports")({
 
 type ReportKind = "class_summary" | "report_card" | "attendance" | "palmares";
 
-function formatFrenchDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
-}
-
 function ReportsPage() {
   const a = useAcademics();
   const attendance = useAttendance();
@@ -58,7 +51,6 @@ function ReportsPage() {
   const [classId, setClassId] = useState("");
   const [periodId, setPeriodId] = useState("");
   const [studentId, setStudentId] = useState("");
-  const [assessmentId, setAssessmentId] = useState("");
   const [exporting, setExporting] = useState<string | null>(null);
 
   const activeClass = classId || a.classes[0]?.id || "";
@@ -68,14 +60,6 @@ function ReportsPage() {
   const activeStudent = students.find((s) => s.id === studentId) ?? students[0];
   const klass = a.classes.find((c) => c.id === activeClass);
   const period = a.periods.find((p) => p.id === activePeriod);
-  const palmaresAssessments = a.assessments
-    .filter(
-      (assessment) => assessment.class_id === activeClass && assessment.period_id === activePeriod,
-    )
-    .sort((left, right) => left.date.localeCompare(right.date));
-  const activeAssessment =
-    palmaresAssessments.find((assessment) => assessment.id === assessmentId) ??
-    palmaresAssessments[0];
   const rows = attendance.data ?? [];
   const palmaresRows =
     kind === "palmares"
@@ -113,19 +97,24 @@ function ReportsPage() {
     teacherName: a.settings?.teacher_name ?? "—",
     date: formatDate(new Date().toISOString().slice(0, 10)),
   };
+  const generatedDate = new Date().toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 
   const buildReport = (): ExportReport => {
-    if (kind === "palmares" && activeAssessment) {
+    if (kind === "palmares") {
       return {
         title,
         subtitle: "",
         ...reportMeta,
         schoolName: "",
-        date: formatFrenchDate(activeAssessment.date),
+        date: generatedDate,
         metadata: [
-          { label: "Contrôle", value: activeAssessment.title },
+          { label: "Contrôle", value: period?.name ?? "—" },
           { label: "Professeur", value: a.settings?.teacher_name ?? "—" },
-          { label: "Date", value: formatFrenchDate(activeAssessment.date) },
+          { label: "Date", value: generatedDate },
           { label: "Classe", value: klass?.name ?? "—" },
         ],
         columns: [
@@ -258,10 +247,6 @@ function ReportsPage() {
   };
 
   const download = async (format: "pdf" | "csv" | "xlsx") => {
-    if (kind === "palmares" && !activeAssessment) {
-      toast.error("Aucun contrôle n’est disponible pour cette classe et cette période.");
-      return;
-    }
     const report = buildReport();
     if (!report.rows.length) {
       toast.error("No report data available to export.");
@@ -269,7 +254,7 @@ function ReportsPage() {
     }
     const subject =
       kind === "palmares"
-        ? `palmares-${activeAssessment?.title ?? "classe"}-${klass?.name ?? "classe"}`
+        ? `palmares-${period?.name ?? "controle"}-${klass?.name ?? "classe"}`
         : kind === "report_card" && activeStudent
           ? `report-card-${fullName(activeStudent)}-${klass?.name ?? "class"}`
           : kind === "class_summary"
@@ -350,24 +335,12 @@ function ReportsPage() {
             options={a.classes.map((c) => ({ value: c.id, label: c.name }))}
           />
           <FilterSelect
-            label="Period"
+            label={kind === "palmares" ? "Contrôle" : "Period"}
             value={activePeriod}
             onChange={setPeriodId}
             includeAll={false}
             options={a.periods.map((p) => ({ value: p.id, label: p.name }))}
           />
-          {kind === "palmares" ? (
-            <FilterSelect
-              label="Contrôle"
-              value={activeAssessment?.id ?? ""}
-              onChange={setAssessmentId}
-              includeAll={false}
-              options={palmaresAssessments.map((assessment) => ({
-                value: assessment.id,
-                label: `${assessment.title} · ${formatFrenchDate(assessment.date)}`,
-              }))}
-            />
-          ) : null}
           {kind === "report_card" ? (
             <FilterSelect
               label="Student"
@@ -387,10 +360,8 @@ function ReportsPage() {
             <>
               <h2 className="font-display text-2xl font-semibold">Palmarès</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Contrôle : {activeAssessment?.title ?? "—"} · Professeur :{" "}
-                {a.settings?.teacher_name ?? "—"} · Date :{" "}
-                {activeAssessment ? formatFrenchDate(activeAssessment.date) : "—"} · Classe :{" "}
-                {klass?.name ?? "—"}
+                Contrôle : {period?.name ?? "—"} · Professeur : {a.settings?.teacher_name ?? "—"} ·
+                Date : {generatedDate} · Classe : {klass?.name ?? "—"}
               </p>
             </>
           ) : (
