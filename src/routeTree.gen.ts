@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PendingRouteImport } from './routes/pending'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AuthenticatedAiAssistantRouteImport } from './routes/_authenticated/ai-assistant'
 import { Route as AuthenticatedAssignmentsRouteImport } from './routes/_authenticated/assignments'
 import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
@@ -41,6 +42,7 @@ import { Route as AuthenticatedClassesClassIdRouteImport } from './routes/_authe
 import { Route as AuthenticatedStudentsStudentIdRouteImport } from './routes/_authenticated/students.$studentId'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
+import { Route as ApiAiCalendarEventsRouteImport } from './routes/api.ai.calendar-events'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +78,12 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAiAssistantRoute =
+  AuthenticatedAiAssistantRouteImport.update({
+    id: '/ai-assistant',
+    path: '/ai-assistant',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAssignmentsRoute =
   AuthenticatedAssignmentsRouteImport.update({
     id: '/assignments',
@@ -206,6 +214,11 @@ const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
   path: '/$userId',
   getParentRoute: () => AdminUsersRoute,
 } as any)
+const ApiAiCalendarEventsRoute = ApiAiCalendarEventsRouteImport.update({
+  id: '/api/ai/calendar-events',
+  path: '/api/ai/calendar-events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -214,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/pending': typeof PendingRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/ai-assistant': typeof AuthenticatedAiAssistantRoute
   '/assignments': typeof AuthenticatedAssignmentsRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/calendar': typeof AuthenticatedCalendarRoute
@@ -238,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/api/ai/calendar-events': typeof ApiAiCalendarEventsRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -246,6 +261,7 @@ export interface FileRoutesByTo {
   '/pending': typeof PendingRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/ai-assistant': typeof AuthenticatedAiAssistantRoute
   '/assignments': typeof AuthenticatedAssignmentsRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
   '/calendar': typeof AuthenticatedCalendarRoute
@@ -269,6 +285,7 @@ export interface FileRoutesByTo {
   '/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/api/ai/calendar-events': typeof ApiAiCalendarEventsRoute
   '/admin/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -280,6 +297,7 @@ export interface FileRoutesById {
   '/pending': typeof PendingRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/ai-assistant': typeof AuthenticatedAiAssistantRoute
   '/_authenticated/assignments': typeof AuthenticatedAssignmentsRoute
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
@@ -304,6 +322,7 @@ export interface FileRoutesById {
   '/_authenticated/classes/$classId': typeof AuthenticatedClassesClassIdRoute
   '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
+  '/api/ai/calendar-events': typeof ApiAiCalendarEventsRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -315,6 +334,7 @@ export interface FileRouteTypes {
     | '/pending'
     | '/privacy'
     | '/terms'
+    | '/ai-assistant'
     | '/assignments'
     | '/attendance'
     | '/calendar'
@@ -339,6 +359,7 @@ export interface FileRouteTypes {
     | '/classes/$classId'
     | '/students/$studentId'
     | '/admin/users/$userId'
+    | '/api/ai/calendar-events'
     | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -347,6 +368,7 @@ export interface FileRouteTypes {
     | '/pending'
     | '/privacy'
     | '/terms'
+    | '/ai-assistant'
     | '/assignments'
     | '/attendance'
     | '/calendar'
@@ -370,6 +392,7 @@ export interface FileRouteTypes {
     | '/classes/$classId'
     | '/students/$studentId'
     | '/admin/users/$userId'
+    | '/api/ai/calendar-events'
     | '/admin/users'
   id:
     | '__root__'
@@ -380,6 +403,7 @@ export interface FileRouteTypes {
     | '/pending'
     | '/privacy'
     | '/terms'
+    | '/_authenticated/ai-assistant'
     | '/_authenticated/assignments'
     | '/_authenticated/attendance'
     | '/_authenticated/calendar'
@@ -404,6 +428,7 @@ export interface FileRouteTypes {
     | '/_authenticated/classes/$classId'
     | '/_authenticated/students/$studentId'
     | '/admin/users/$userId'
+    | '/api/ai/calendar-events'
     | '/admin/users/'
   fileRoutesById: FileRoutesById
 }
@@ -415,6 +440,7 @@ export interface RootRouteChildren {
   PendingRoute: typeof PendingRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  ApiAiCalendarEventsRoute: typeof ApiAiCalendarEventsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -467,6 +493,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/ai-assistant': {
+      id: '/_authenticated/ai-assistant'
+      path: '/ai-assistant'
+      fullPath: '/ai-assistant'
+      preLoaderRoute: typeof AuthenticatedAiAssistantRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/assignments': {
       id: '/_authenticated/assignments'
@@ -643,6 +676,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersUserIdRouteImport
       parentRoute: typeof AdminUsersRoute
     }
+    '/api/ai/calendar-events': {
+      id: '/api/ai/calendar-events'
+      path: '/api/ai/calendar-events'
+      fullPath: '/api/ai/calendar-events'
+      preLoaderRoute: typeof ApiAiCalendarEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -671,6 +711,7 @@ const AuthenticatedStudentsRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAiAssistantRoute: typeof AuthenticatedAiAssistantRoute
   AuthenticatedAssignmentsRoute: typeof AuthenticatedAssignmentsRoute
   AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
@@ -689,6 +730,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAiAssistantRoute: AuthenticatedAiAssistantRoute,
   AuthenticatedAssignmentsRoute: AuthenticatedAssignmentsRoute,
   AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
@@ -751,6 +793,7 @@ const rootRouteChildren: RootRouteChildren = {
   PendingRoute: PendingRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  ApiAiCalendarEventsRoute: ApiAiCalendarEventsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

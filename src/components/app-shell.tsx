@@ -10,6 +10,7 @@ import {
   ListChecks,
   Menu,
   NotebookPen,
+  Sparkles,
   Settings as SettingsIcon,
   ShieldCheck,
   Table2,
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/students", key: "students", icon: Users },
   { to: "/classes", key: "classes", icon: GraduationCap },
   { to: "/calendar", key: "calendar", icon: CalendarDays },
+  { to: "/ai-assistant", key: "aiAssistant", icon: Sparkles },
   { to: "/attendance", key: "attendance", icon: UserCheck },
 ] as const;
 

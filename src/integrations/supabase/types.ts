@@ -369,6 +369,7 @@ export type Database = {
       };
       calendar_events: {
         Row: {
+          ai_tool_call_id: string | null;
           class_id: string | null;
           created_at: string;
           description: string | null;
@@ -376,12 +377,14 @@ export type Database = {
           event_date: string;
           event_type: string;
           id: string;
+          owner_id: string | null;
           start_time: string | null;
           subject_id: string | null;
           title: string;
           updated_at: string;
         };
         Insert: {
+          ai_tool_call_id?: string | null;
           class_id?: string | null;
           created_at?: string;
           description?: string | null;
@@ -389,12 +392,14 @@ export type Database = {
           event_date: string;
           event_type?: string;
           id?: string;
+          owner_id?: string | null;
           start_time?: string | null;
           subject_id?: string | null;
           title: string;
           updated_at?: string;
         };
         Update: {
+          ai_tool_call_id?: string | null;
           class_id?: string | null;
           created_at?: string;
           description?: string | null;
@@ -402,6 +407,7 @@ export type Database = {
           event_date?: string;
           event_type?: string;
           id?: string;
+          owner_id?: string | null;
           start_time?: string | null;
           subject_id?: string | null;
           title?: string;
