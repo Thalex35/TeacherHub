@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../src/*"]
+    },
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
+  },
+  "include": [
+    "agent.ts",
+    "chat-api.ts",
+    "server.ts",
+    "tools/**/*.ts",
+    "../src/lib/server/calendar-event-endpoint.ts",
+    "../src/lib/server/calendar-event-service.ts",
+    "../src/lib/types.ts",
+    "../src/integrations/supabase/types.ts"
+  ]
+}

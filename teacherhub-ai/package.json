@@ -1,0 +1,26 @@
+{
+  "name": "teacherhub-ai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "agent.ts",
+  "scripts": {
+    "start": "adk run ./agent.ts",
+    "serve": "node --env-file=.env server.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "smoke": "node --env-file=.env --test test/smoke.test.mjs",
+    "test:unit": "node --test test/calendar-event-api.test.mjs test/chat-api.test.mjs",
+    "test": "npm run test:unit && npm run smoke"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@google/adk": "^2.5.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@google/adk-devtools": "^2.5.0",
+    "typescript": "^5.9.3"
+  }
+}

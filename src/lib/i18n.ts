@@ -7,6 +7,7 @@ type TranslationKey =
   | "students"
   | "classes"
   | "calendar"
+  | "aiAssistant"
   | "attendance"
   | "management"
   | "curriculum"
@@ -36,6 +37,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     students: "Students",
     classes: "Classes",
     calendar: "Calendar",
+    aiAssistant: "AI Assistant",
     attendance: "Attendance",
     management: "Management",
     curriculum: "Curriculum",
@@ -64,6 +66,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     students: "Élèves",
     classes: "Classes",
     calendar: "Calendrier",
+    aiAssistant: "Assistant IA",
     attendance: "Présence",
     management: "Gestion",
     curriculum: "Programme",
@@ -92,6 +95,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     students: "Elèv",
     classes: "Klas",
     calendar: "Kalandriye",
+    aiAssistant: "Asistan IA",
     attendance: "Prezans",
     management: "Jesyon",
     curriculum: "Kourikoulòm",
