@@ -30,18 +30,13 @@ const TABLE_TOP = 49;
 const HEADER_HEIGHT = 14;
 const ROW_HEIGHT = 27;
 const ROWS_PER_FORM = 5;
+const CELL_FONT_SIZE = 7;
+const MIN_CELL_FONT_SIZE = 4.5;
+const CELL_LINE_HEIGHT_FACTOR = 0.44;
+const CELL_TEXT_TOP_PADDING = 4;
+const CELL_TEXT_BOTTOM_PADDING = 2.5;
 const COLUMN_WIDTHS = [17, 21, 27, 27, 38, 39, 48, 65];
 const HEADERS = [
-  "Semaine",
-  "Date",
-  "Heures d'entrée",
-  "Heures de sortie",
-  "Thème",
-  "Objectifs",
-  "Devoir / leçon",
-  "Remarques/Observations",
-];
-const CELL_LABELS = [
   "Semaine",
   "Date",
   "Heures d'entrée",
@@ -86,7 +81,7 @@ function wrapParagraphs(pdf: jsPDF, value: string, width: number) {
 function splitTeacherName(fullName: string) {
   const names = fullName.trim().split(/\s+/).filter(Boolean);
   if (names.length < 2) return { surname: names[0] ?? "", firstName: "" };
-  return { surname: names[names.length - 1], firstName: names.slice(0, -1).join(" ") };
+  return { surname: names[names.length - 1] ?? "", firstName: names.slice(0, -1).join(" ") };
 }
 
 function drawHeader(pdf: jsPDF, input: TeacherControlSheetPdfInput) {
@@ -120,7 +115,12 @@ function drawHeader(pdf: jsPDF, input: TeacherControlSheetPdfInput) {
   writeField("Classe :", input.className, MARGIN + thirds, 40, thirds - 4);
 }
 
-function sessionCells(sessions: TeacherControlSessionPdfEntry[] | undefined, weekNumber: number) {
+type SessionCellValues = [string, string, string, string, string, string, string, string];
+
+function sessionCells(
+  sessions: TeacherControlSessionPdfEntry[] | undefined,
+  weekNumber: number,
+): SessionCellValues {
   if (!sessions?.length)
     return [String(weekNumber), "", "", "", "", "", "Titre :\n\nDate de remise :", ""];
   const joinValues = (getValue: (session: TeacherControlSessionPdfEntry) => string) =>
@@ -143,14 +143,97 @@ function sessionCells(sessions: TeacherControlSessionPdfEntry[] | undefined, wee
   ];
 }
 
-type OverflowEntry = { sessionNumber: number; label: string; text: string };
+type PreparedRow = {
+  lines: string[][];
+  minimumHeight: number;
+  height: number;
+  targetHeight: number;
+};
+
+function prepareRows(
+  pdf: jsPDF,
+  sessions: (TeacherControlSessionPdfEntry[] | undefined)[],
+  firstSessionNumber: number,
+  fontSize: number,
+) {
+  const lineHeight = fontSize * CELL_LINE_HEIGHT_FACTOR;
+  pdf.setFont("TeacherHubSans", "normal");
+  pdf.setFontSize(fontSize);
+
+  return sessions.map((weekSessions, sessionIndex) => {
+    const values = sessionCells(weekSessions, firstSessionNumber + sessionIndex);
+    const lines = values.map((value, columnIndex) => {
+      const width = COLUMN_WIDTHS[columnIndex];
+      if (width === undefined) throw new Error(`Missing width for PDF column ${columnIndex}.`);
+      return wrapParagraphs(pdf, value, width - 2);
+    });
+    const maxLines = Math.max(...lines.map((cellLines) => cellLines.length));
+    const minimumHeight = Math.max(
+      12,
+      CELL_TEXT_TOP_PADDING +
+        (maxLines - 1) * lineHeight +
+        fontSize * 0.3528 +
+        CELL_TEXT_BOTTOM_PADDING,
+    );
+
+    return { lines, minimumHeight, height: minimumHeight, targetHeight: minimumHeight };
+  });
+}
+
+function fitRowsToPage(
+  pdf: jsPDF,
+  sessions: (TeacherControlSessionPdfEntry[] | undefined)[],
+  firstSessionNumber: number,
+) {
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const availableHeight = pageHeight - MARGIN - (TABLE_TOP + HEADER_HEIGHT);
+
+  for (let fontStep = CELL_FONT_SIZE * 4; fontStep >= MIN_CELL_FONT_SIZE * 4; fontStep -= 1) {
+    const fontSize = fontStep / 4;
+    const rows = prepareRows(pdf, sessions, firstSessionNumber, fontSize);
+    const minimumTotal = rows.reduce((total, row) => total + row.minimumHeight, 0);
+    if (minimumTotal > availableHeight) continue;
+
+    rows.forEach((row) => {
+      row.targetHeight = Math.max(ROW_HEIGHT, row.minimumHeight);
+    });
+    const targetTotal = rows.reduce((total, row) => total + row.targetHeight, 0);
+    if (targetTotal <= availableHeight) {
+      rows.forEach((row) => {
+        row.height = row.targetHeight;
+      });
+    } else {
+      let remaining = availableHeight - minimumTotal;
+      while (remaining > 0.01) {
+        const growingRows = rows
+          .filter((row) => row.height < row.targetHeight - 0.01);
+        if (!growingRows.length) break;
+
+        const share = remaining / growingRows.length;
+        let used = 0;
+        growingRows.forEach((row) => {
+          const growth = Math.min(share, row.targetHeight - row.height);
+          row.height += growth;
+          used += growth;
+        });
+        remaining -= used;
+      }
+    }
+
+    return { rows, fontSize, lineHeight: fontSize * CELL_LINE_HEIGHT_FACTOR };
+  }
+
+  throw new Error(
+    "This sheet has too much detail to fit on one page. Shorten the session text and try again.",
+  );
+}
 
 function drawFormPage(
   pdf: jsPDF,
   input: TeacherControlSheetPdfInput,
-  sessions: (TeacherControlSessionPdfEntry[] | undefined)[],
-  firstSessionNumber: number,
-  overflow: OverflowEntry[],
+  rows: PreparedRow[],
+  fontSize: number,
+  lineHeight: number,
 ) {
   const pageWidth = pdf.internal.pageSize.getWidth();
   drawHeader(pdf, input);
@@ -163,107 +246,35 @@ function drawFormPage(
   let x = tableLeft;
   HEADERS.forEach((header, columnIndex) => {
     const width = COLUMN_WIDTHS[columnIndex];
+    if (width === undefined) throw new Error(`Missing width for PDF column ${columnIndex}.`);
     pdf.rect(x, TABLE_TOP, width, HEADER_HEIGHT);
     pdf.setFont("TeacherHubSans", "bold");
     pdf.setFontSize(7.5);
     const headerLines = wrapParagraphs(pdf, header, width - 2);
-    const lineHeight = 3.1;
+    const headerLineHeight = 3.1;
     const firstBaseline =
-      TABLE_TOP + (HEADER_HEIGHT - (headerLines.length - 1) * lineHeight) / 2 + 1;
+      TABLE_TOP + (HEADER_HEIGHT - (headerLines.length - 1) * headerLineHeight) / 2 + 1;
     headerLines.forEach((line, index) =>
-      pdf.text(line, x + width / 2, firstBaseline + index * lineHeight, { align: "center" }),
+      pdf.text(line, x + width / 2, firstBaseline + index * headerLineHeight, { align: "center" }),
     );
     x += width;
   });
 
-  const maxLines = Math.floor((ROW_HEIGHT - 5) / 3.1);
-  sessions.forEach((weekSessions, sessionIndex) => {
-    const globalIndex = firstSessionNumber + sessionIndex;
-    const values = sessionCells(weekSessions, globalIndex);
-    const top = TABLE_TOP + HEADER_HEIGHT + sessionIndex * ROW_HEIGHT;
+  let top = TABLE_TOP + HEADER_HEIGHT;
+  rows.forEach((row) => {
     let cellX = tableLeft;
-
-    values.forEach((value, columnIndex) => {
+    row.lines.forEach((lines, columnIndex) => {
       const width = COLUMN_WIDTHS[columnIndex];
-      pdf.rect(cellX, top, width, ROW_HEIGHT);
+      if (width === undefined) throw new Error(`Missing width for PDF column ${columnIndex}.`);
+      pdf.rect(cellX, top, width, row.height);
       pdf.setFont("TeacherHubSans", "normal");
-      pdf.setFontSize(7);
-      const lines = wrapParagraphs(pdf, value, width - 2);
-      const isDevoirCell = columnIndex === 6;
-      const visibleLines = lines.slice(0, maxLines);
-      const baseline = top + (isDevoirCell ? 4 : 4);
-      visibleLines.forEach((line, lineIndex) => {
-        pdf.text(line, cellX + 1, baseline + lineIndex * 3.1);
+      pdf.setFontSize(fontSize);
+      lines.forEach((line, lineIndex) => {
+        pdf.text(line, cellX + 1, top + CELL_TEXT_TOP_PADDING + lineIndex * lineHeight);
       });
-
-      if (lines.length > maxLines) {
-        overflow.push({
-          sessionNumber: globalIndex,
-          label: CELL_LABELS[columnIndex],
-          text: lines.slice(maxLines).join("\n"),
-        });
-      }
       cellX += width;
     });
-  });
-}
-
-function drawOverflowPages(
-  pdf: jsPDF,
-  input: TeacherControlSheetPdfInput,
-  entries: OverflowEntry[],
-) {
-  if (!entries.length) return;
-  pdf.addPage();
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const contentWidth = pageWidth - MARGIN * 2;
-  let y = 28;
-
-  const drawContinuationHeader = () => {
-    pdf.setTextColor(0, 0, 0);
-    pdf.setFont("TeacherHubSans", "bold");
-    pdf.setFontSize(13);
-    pdf.text("Fiche de contrôle des professeurs — suite", pageWidth / 2, 15, {
-      align: "center",
-    });
-    pdf.setFont("TeacherHubSans", "normal");
-    pdf.setFontSize(9);
-    pdf.text(
-      `Professeur : ${input.teacherName} · Classe : ${input.className} · Cours : Informatique · Mois : ${input.monthLabel}`,
-      pageWidth / 2,
-      22,
-      { align: "center" },
-    );
-    y = 32;
-  };
-
-  drawContinuationHeader();
-  entries.forEach((entry) => {
-    pdf.setFont("TeacherHubSans", "bold");
-    pdf.setFontSize(9);
-    const heading = `Séance ${entry.sessionNumber} — ${entry.label} (suite)`;
-    if (y + 10 > pageHeight - MARGIN) {
-      pdf.addPage();
-      drawContinuationHeader();
-    }
-    pdf.text(heading, MARGIN, y);
-    y += 5;
-
-    pdf.setFont("TeacherHubSans", "normal");
-    pdf.setFontSize(9);
-    const lines = wrapParagraphs(pdf, entry.text, contentWidth);
-    for (const line of lines) {
-      if (y + 5 > pageHeight - MARGIN) {
-        pdf.addPage();
-        drawContinuationHeader();
-        pdf.setFont("TeacherHubSans", "normal");
-        pdf.setFontSize(9);
-      }
-      pdf.text(line, MARGIN, y);
-      y += 4.5;
-    }
-    y += 3;
+    top += row.height;
   });
 }
 
@@ -277,7 +288,6 @@ export async function createTeacherControlSheetPdf(input: TeacherControlSheetPdf
   pdf.addFont("TeacherHubSans-Regular.ttf", "TeacherHubSans", "normal");
   pdf.addFileToVFS("TeacherHubSans-Bold.ttf", boldFont);
   pdf.addFont("TeacherHubSans-Bold.ttf", "TeacherHubSans", "bold");
-  const overflow: OverflowEntry[] = [];
   const sessionsByWeek = new Map<number, TeacherControlSessionPdfEntry[]>();
   for (const session of [...input.sessions].sort(
     (a, b) =>
@@ -291,18 +301,11 @@ export async function createTeacherControlSheetPdf(input: TeacherControlSheetPdf
   }
 
   const lastWeek = Math.max(ROWS_PER_FORM, ...sessionsByWeek.keys());
-  const pages = Math.ceil(lastWeek / ROWS_PER_FORM);
-
-  for (let page = 0; page < pages; page += 1) {
-    if (page > 0) pdf.addPage();
-    const start = page * ROWS_PER_FORM;
-    const pageSessions = Array.from({ length: ROWS_PER_FORM }, (_, index) =>
-      sessionsByWeek.get(start + index + 1),
-    );
-    drawFormPage(pdf, input, pageSessions, start + 1, overflow);
-  }
-
-  drawOverflowPages(pdf, input, overflow);
+  const pageSessions = Array.from({ length: lastWeek }, (_, index) =>
+    sessionsByWeek.get(index + 1),
+  );
+  const { rows, fontSize, lineHeight } = fitRowsToPage(pdf, pageSessions, 1);
+  drawFormPage(pdf, input, rows, fontSize, lineHeight);
   return pdf;
 }
 
