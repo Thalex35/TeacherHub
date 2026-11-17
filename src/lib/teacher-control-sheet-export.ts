@@ -214,6 +214,7 @@ function drawOverflowPages(
   entries: OverflowEntry[],
 ) {
   if (!entries.length) return;
+  pdf.addPage();
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const contentWidth = pageWidth - MARGIN * 2;
