@@ -12,11 +12,14 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "build:workers": "npm run cf-typegen && vite build",
     "electron": "electron .",
     "electron:dev": "concurrently -k \"bun run dev -- --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env ELECTRON_START_URL=http://127.0.0.1:5173 electron .\"",
     "electron:build": "cross-env ELECTRON_BUILD=1 bun run build && electron-builder --win",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "cf-typegen": "wrangler types",
+    "wrangler:dev": "wrangler dev",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -84,6 +87,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "1.69.0",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "^2.15.0",
     "@types/node": "^22.16.5",
@@ -105,7 +109,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5",
-    "wait-on": "^9.1.0"
+    "wait-on": "^9.1.0",
+    "wrangler": "4.163.0"
   },
   "build": {
     "appId": "com.thalex35.childrenmanagement",

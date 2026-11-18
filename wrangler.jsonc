@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "teacherhub",
+  "previews": {},
+  "main": "src/server.ts",
+  "compatibility_date": "2026-11-17",
+  "observability": {
+    "enabled": true,
+  },
+  "secrets": {
+    "required": [
+      "SUPABASE_URL",
+      "SUPABASE_PUBLISHABLE_KEY",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "TEACHERHUB_AI_SERVICE_URL",
+      "TEACHERHUB_AI_SERVICE_TOKEN",
+    ],
+  },
+}

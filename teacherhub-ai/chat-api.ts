@@ -222,7 +222,7 @@ export function createAiChatHandler(
 ): (request: Request) => Promise<Response> {
   const dependencies: ChatApiDependencies = {
     authenticate: async (request) => {
-      const context = await authenticateCalendarRequest(request);
+      const context = await authenticateCalendarRequest(request, process.env);
       return { userId: context.userId, accessToken: context.accessToken };
     },
     sessionService: new InMemorySessionService(),
