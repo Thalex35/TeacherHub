@@ -32,6 +32,11 @@ export type CalendarEventEndpointDependencies = {
   createRepository: (context: AuthenticatedCalendarRequest) => CalendarEventRepository;
 };
 
+export type CalendarEventEnvironment = {
+  SUPABASE_URL?: string;
+  SUPABASE_PUBLISHABLE_KEY?: string;
+};
+
 function jsonError(status: number, code: string, message: string): Response {
   return Response.json({ error: message, code }, { status });
 }
@@ -81,7 +86,7 @@ function isProfileStatusRows(value: unknown): value is { account_status: string 
 
 export async function authenticateCalendarRequest(
   request: Request,
-  environment: Readonly<Record<string, string | undefined>> = process.env,
+  environment: CalendarEventEnvironment,
 ): Promise<AuthenticatedCalendarRequest> {
   const authorization = request.headers.get("authorization");
   const tokenMatch = authorization?.match(/^Bearer ([^\s]+)$/);
@@ -184,10 +189,7 @@ export function createSupabaseCalendarEventRepository(
 }
 
 export function createCalendarEventPostHandler(
-  dependencies: CalendarEventEndpointDependencies = {
-    authenticate: authenticateCalendarRequest,
-    createRepository: createSupabaseCalendarEventRepository,
-  },
+  dependencies: CalendarEventEndpointDependencies,
 ): (request: Request) => Promise<Response> {
   return async (request) => {
     if (request.method !== "POST") {
