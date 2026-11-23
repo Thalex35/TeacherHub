@@ -1,8 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { env } from "cloudflare:workers";
 
-import { createCalendarEventPostHandler } from "@/lib/server/calendar-event-endpoint";
+import {
+  authenticateCalendarRequest,
+  createCalendarEventPostHandler,
+  createSupabaseCalendarEventRepository,
+} from "@/lib/server/calendar-event-endpoint";
 
-const handleCalendarEventPost = createCalendarEventPostHandler();
+const handleCalendarEventPost = createCalendarEventPostHandler({
+  authenticate: (request) => authenticateCalendarRequest(request, env),
+  createRepository: createSupabaseCalendarEventRepository,
+});
 
 export const Route = createFileRoute("/api/ai/calendar-events")({
   server: {

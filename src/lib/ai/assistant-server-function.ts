@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { env } from "cloudflare:workers";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -31,8 +32,8 @@ export const sendTeacherAssistantTurn = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<AssistantActionResult> => {
     const request = getRequest();
     const authorization = request.headers.get("authorization");
-    const serviceToken = process.env["TEACHERHUB_AI_SERVICE_TOKEN"];
-    const serviceEndpoint = getServiceEndpoint(process.env["TEACHERHUB_AI_SERVICE_URL"]);
+    const serviceToken = env.TEACHERHUB_AI_SERVICE_TOKEN;
+    const serviceEndpoint = getServiceEndpoint(env.TEACHERHUB_AI_SERVICE_URL);
     if (!authorization || !serviceToken || !serviceEndpoint) {
       return errorResult("configuration_error", "Teacher Desk AI is not configured.");
     }
